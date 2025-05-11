@@ -16,8 +16,7 @@ class SequenceState(BaseModel):
 
     # Attributes
     # id: str
-    email_list: List[dict]
-    current_index: int
+    email_list: Dict[str, Any]
     email: dict
     is_mail_important: bool = False
     email_summary: Optional[str]

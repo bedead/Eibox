@@ -75,7 +75,10 @@ async def read_emails_json(state: SequenceState):
         print("No emails found.")
         return None
 
-    return {"email_list": emails}  # Return the first valid email data found
+    return {
+        "email_list": emails,
+        "current_index": 0,
+    }  # Return the first valid email data found
 
 
 async def analyze_importance(state: SequenceState):
@@ -91,7 +94,10 @@ async def analyze_importance(state: SequenceState):
     )
     decision1 = important_response.get("output", "").lower().strip()
 
-    return {"is_mail_important": decision1 == "yes"}
+    return {
+        "is_mail_important": decision1 == "yes",
+        "current_index": state.current_index + 1,
+    }
 
 
 async def summarize_email(state: SequenceState):

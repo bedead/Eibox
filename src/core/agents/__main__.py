@@ -104,3 +104,7 @@ sequence_graph.add_node(
 )
 
 # Add edges to the graph
+sequence_graph.add_edge(START, "start_gmail_toolkit")
+sequence_graph.add_edge('start_gmail_toolkit', "read_emails_json")
+sequence_graph.add_edge("read_emails_json", "pause_gmail_toolkit")
+
