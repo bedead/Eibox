@@ -1,8 +1,7 @@
 from typing import List
-from core.agents.sequence_graph.states import SequenceState
-from core.gmail.gmail_toolkit import GmailToolKit
-from core.gmail.status import GmailToolKitRunningStatus
-from core.json.reader import JSONEmailReader
+from .states import SequenceState
+from src.core.gmail.status import GmailToolKitRunningStatus
+from src.core.json.reader import JSONEmailReader
 
 
 def start_gmail_toolkit(state: SequenceState):
@@ -63,21 +62,20 @@ def restart_gmail_toolkit(state: SequenceState):
     return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
 
 
-async def read_emails_json(state: SequenceState):
+def read_emails_json(state: SequenceState):
     """
     Read emails from the email reader and update the state with the email data.
     Asynch method (blocking), so that start on next node execution is awaited till the emails are read.
     """
     email_reader = JSONEmailReader()
-    emails: List[dict] = await email_reader.get_all_email_content()
+    emails: List[dict] = email_reader.get_all_email_content()
 
     if not isinstance(emails, list) or not emails:
         print("No emails found.")
         return None
 
     return {
-        "email_list": emails,
-        "current_index": 0,
+        "email": emails,
     }  # Return the first valid email data found
 
 
@@ -85,10 +83,10 @@ async def analyze_importance(state: SequenceState):
     """
     Analyze the importance of the email using the AI toolkit.
     """
-    if not state.email_list:
+    if not state.email:
         return None
 
-    email_data = state.email_list[state.current_index]
+    email_data = state.email
     important_response = await state.ai_toolkit.analyze_importance(
         email_data=email_data, json_output=True
     )
@@ -96,7 +94,6 @@ async def analyze_importance(state: SequenceState):
 
     return {
         "is_mail_important": decision1 == "yes",
-        "current_index": state.current_index + 1,
     }
 
 
@@ -104,10 +101,10 @@ async def summarize_email(state: SequenceState):
     """
     Summarize the email using the AI toolkit.
     """
-    if not state.email_list or state.current_index >= len(state.email_list):
+    if not state.email:
         return None
     if state.is_mail_important:
-        email_data = state.email_list[state.current_index]
+        email_data = state.email
         summary = await state.ai_toolkit.summarize_email(
             email_data=email_data, json_output=True
         )
@@ -118,10 +115,10 @@ async def is_response_needed(state: SequenceState):
     """
     Check if a response is needed for the email using the AI toolkit.
     """
-    if not state.email_list or state.current_index >= len(state.email_list):
+    if not state.email:
         return None
     if state.is_mail_important:
-        email_data = state.email_list[state.current_index]
+        email_data = state.email
         response_needed = await state.ai_toolkit.is_response_needed(
             email_data=email_data, json_output=True
         )
@@ -133,10 +130,10 @@ async def mail_response_format(state: SequenceState):
     """
     Get the response format for the email using the AI toolkit.
     """
-    if not state.email_list or state.current_index >= len(state.email_list):
+    if not state.email:
         return None
     if state.is_mail_important and state.is_response_needed:
-        email_data = state.email_list[state.current_index]
+        email_data = state.email
         format_response = await state.ai_toolkit.mail_response_format(
             email_data=email_data, json_output=True
         )
@@ -148,10 +145,10 @@ async def generate_draft_response(state: SequenceState):
     """
     Generate a response for the email using the AI toolkit.
     """
-    if not state.email_list or state.current_index >= len(state.email_list):
+    if not state.email:
         return None
     if state.is_mail_important and state.is_response_needed:
-        email_data = state.email_list[state.current_index]
+        email_data = state.email
         response_suggestion = await state.ai_toolkit.generate_response(
             email_data=email_data,
             json_output=True,
@@ -196,14 +193,14 @@ async def auto_edit_response(state: SequenceState):
     """
     Auto edit the response for the email using the AI toolkit (LLM) by giving customization instruction.
     """
-    if not state.email_list or state.current_index >= len(state.email_list):
+    if not state.email:
         return None
     if (
         state.is_mail_important
         and state.is_response_needed
         and state.response_email_draft != None
     ):
-        email_data = state.email_list[state.current_index]
+        email_data = state.email
         edited_response = await state.ai_toolkit.edit_response(
             email_data=email_data,
             draft_mail=state.response_email_draft,
@@ -218,7 +215,7 @@ async def send_email_response(state: SequenceState):
     """
     Send the response for the email using the Gmail toolkit.
     """
-    if not state.email_list or state.current_index >= len(state.email_list):
+    if not state.email:
         return None
     if (
         state.is_mail_important
@@ -226,7 +223,7 @@ async def send_email_response(state: SequenceState):
         and state.is_response_needed
         and state.response_email_draft != None
     ):
-        email_data = state.email_list[state.current_index]
+        email_data = state.email
         response_text = state.response_email_draft
         state.gmail_tool.send_mail(
             to=email_data["sender"],
