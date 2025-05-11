@@ -138,7 +138,7 @@ async def mail_response_format(state: SequenceState):
         return {"response_format": response_format}
 
 
-async def generate_response(state: SequenceState):
+async def generate_draft_response(state: SequenceState):
     """
     Generate a response for the email using the AI toolkit.
     """
@@ -155,13 +155,13 @@ async def generate_response(state: SequenceState):
         return {"response_email_draft": response_text}
 
 
-def get_response_approval(state: SequenceState):
+async def get_response_approval(state: SequenceState):
     """
     Get the response approval from the user.
     This is a placeholder function and should be replaced with actual user input handling.
     """
     # Simulate user approval for the response
-    input_text = input("Do you approve the response? (yes/no): ").strip().lower()
+    input_text = await input("Do you approve the response? (yes/no): ").strip().lower()
     if input_text == "yes":
         user_approval = True
     elif input_text == "no":
@@ -172,7 +172,7 @@ def get_response_approval(state: SequenceState):
     return {"response_approved": user_approval}
 
 
-def get_edited_response(state: SequenceState):
+async def get_edited_response(state: SequenceState):
     """
     Get the edited response from the user.
     This is a placeholder function and should be replaced with actual user input handling.
@@ -180,7 +180,7 @@ def get_edited_response(state: SequenceState):
     # Simulate user editing the response
     print("Current response draft:")
     print(state.response_email_draft)
-    input_text = input("Please edit the response: ").strip()
+    input_text = await input("Please edit the response: ").strip()
     if input_text:
         return {"response_email_draft": input_text}
     return None
@@ -208,7 +208,7 @@ async def auto_edit_response(state: SequenceState):
         return {"response_edited": edited_response_text}
 
 
-async def send_response(state: SequenceState):
+async def send_email_response(state: SequenceState):
     """
     Send the response for the email using the Gmail toolkit.
     """
