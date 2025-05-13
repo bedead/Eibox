@@ -18,12 +18,14 @@ class GroqLLM(BaseLLMArch):
     def generate_response(
         self, contents: str | List[str], system_instruction: str = None, **kwargs
     ) -> str:
-        user_contents = [contents]
-        user_contents.append(value for value in kwargs.values() if value is not None)
+        contents = [contents] + [
+            value for key, value in kwargs.items() if len(kwargs) > 0
+        ]
+
         return self.chat(
             [
                 {"role": "system", "content": system_instruction},
-                {"role": "user", "content": user_contents},
+                {"role": "user", "content": contents},
             ]
         )
 

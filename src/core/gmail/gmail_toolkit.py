@@ -116,9 +116,7 @@ class GmailToolKit:
             with open(self.json_file, "w") as file:
                 json.dump(existing_emails, file, indent=4)
 
-            self.logger.debug(
-                f"Saved {len(new_emails)} new email(s) to {self.json_file}"
-            )
+            print(f"Saved {len(new_emails)} new email(s) to {self.json_file}")
 
     def get_email_content(self, message_id):
         """Retrieve email content given the email ID."""
@@ -246,6 +244,13 @@ class GmailToolKit:
             self.logger.debug("Started monitoring emails...")
         else:
             self.logger.debug("Monitoring is already active.")
+
+    def wait_for_data(self, file_path: str, timeout: int = 10):
+        start_time = time.time()
+        while not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Data not ready within timeout.")
+            time.sleep(0.5)
 
     def stop(self):
         """Stop the background monitoring thread."""

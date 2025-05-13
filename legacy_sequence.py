@@ -3,7 +3,7 @@ import strip_markdown
 
 from src.core.gmail.gmail_toolkit import GmailToolKit
 from src.core.json.reader import JSONEmailReader
-from core.llm.ai_toolkit import get_ai_toolkit
+from src.core.llm.ai_toolkit import get_ai_toolkit
 from src.core.utils._logs import setup_logging
 
 

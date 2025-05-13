@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from src.core.gmail.gmail_toolkit import GmailToolKit
@@ -21,14 +21,15 @@ class SequenceState(BaseModel):
     email: Dict[str, Any] = Field(
         default=None
     )  # Email data read from JSON file (One at a time)
-    is_mail_important: Optional[bool] = Field(default=False)
+    is_mail_important: Optional[bool] = Field(default=None)
     email_summary: Optional[str] = Field(default=None)
-    is_response_needed: Optional[bool] = Field(default=False)
+    is_response_needed: Optional[bool] = Field(default=None)
     response_format: Optional[str] = Field(default=None)
     response_email_draft: Optional[str] = Field(default=None)
-    response_approved: Optional[bool] = Field(default=False)
-    response_sent: Optional[bool] = Field(default=False)
-    response_edited: Optional[str] = Field(default=False)
+    draft_manual_edit_mode : Optional[Literal[0, 1, 2]] = Field(default=None)
+    response_approved: Optional[bool] = Field(default=None)
+    response_sent: Optional[bool] = Field(default=None)
+    response_edited: Optional[str] = Field(default=None)
 
     # tracking gmail_toolkit running status
     gmail_tool: Optional[GmailToolKit] = GmailToolKit(

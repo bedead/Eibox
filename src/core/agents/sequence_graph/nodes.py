@@ -14,8 +14,10 @@ def start_gmail_toolkit(state: SequenceState):
         and state.gmail_toolkit_status == GmailToolKitRunningStatus.STOPED
         and state.gmail_toolkit_status != GmailToolKitRunningStatus.PAUSED
     ):
+        print("yes")
         state.gmail_tool.start()
-    return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
+
+        return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
 
 
 def pasue_gmail_toolkit(state: SequenceState):
@@ -39,7 +41,7 @@ def resume_gmail_toolkit(state: SequenceState):
         and state.gmail_toolkit_status != GmailToolKitRunningStatus.STOPED
     ):
         state.gmail_tool.resume()
-    return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
+        return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
 
 
 def stop_gmail_toolkit(state: SequenceState):
@@ -67,11 +69,14 @@ def read_emails_json(state: SequenceState):
     Read emails from the email reader and update the state with the email data.
     Asynch method (blocking), so that start on next node execution is awaited till the emails are read.
     """
+    state.gmail_tool.wait_for_data(file_path="emails.json")
+
     email_reader = JSONEmailReader()
     emails: List[dict] = email_reader.get_all_email_content()
 
     if not isinstance(emails, list) or not emails:
         print("No emails found.")
+        print(emails)
         return None
 
     return {
@@ -79,7 +84,7 @@ def read_emails_json(state: SequenceState):
     }  # Return the first valid email data found
 
 
-async def analyze_importance(state: SequenceState):
+def analyze_importance(state: SequenceState):
     """
     Analyze the importance of the email using the AI toolkit.
     """
@@ -87,7 +92,8 @@ async def analyze_importance(state: SequenceState):
         return None
 
     email_data = state.email
-    important_response = await state.ai_toolkit.analyze_importance(
+    # print(asyncio.iscoroutinefunction(state.ai_toolkit.analyze_importance))
+    important_response = state.ai_toolkit.analyze_importance(
         email_data=email_data, json_output=True
     )
     decision1 = important_response.get("output", "").lower().strip()
@@ -161,10 +167,13 @@ async def generate_draft_response(state: SequenceState):
 async def get_response_approval(state: SequenceState):
     """
     Get the response approval from the user.
-    This is a placeholder function and should be replaced with actual user input handling.
     """
     # Simulate user approval for the response
-    input_text = await input("Do you approve the response? (yes/no): ").strip().lower()
+    input_text = (
+        await input("Do you approve the draft response to be sent? (yes/no): ")
+        .strip()
+        .lower()
+    )
     if input_text == "yes":
         user_approval = True
     elif input_text == "no":
@@ -175,10 +184,33 @@ async def get_response_approval(state: SequenceState):
     return {"response_approved": user_approval}
 
 
+async def get_draft_edit_mode(state: SequenceState):
+    """
+    Get the draft edit mode from the user.
+    This is a function which lets users choose the edit mode of draft (manual/auto).
+    """
+    # Simulate user selecting the draft edit mode
+    input_text = (
+        await input(
+            "How do you want to edit the draft? (manual: 0/auto: 1/ skip response: 2): "
+        )
+        .strip()
+        .lower()
+    )
+    if input_text == "0":
+        return {"draft_manual_edit_mode": 0}
+    elif input_text == "1":
+        return {"draft_manual_edit_mode": 1}
+    elif input_text == "2":
+        return {"draft_manual_edit_mode": 2}
+    else:
+        print("Invalid input. Please enter '0' or '1' or '2'.")
+        return None
+
+
 async def get_edited_response(state: SequenceState):
     """
     Get the edited response from the user.
-    This is a placeholder function and should be replaced with actual user input handling.
     """
     # Simulate user editing the response
     print("Current response draft:")
@@ -199,6 +231,7 @@ async def auto_edit_response(state: SequenceState):
         state.is_mail_important
         and state.is_response_needed
         and state.response_email_draft != None
+        and state.draft_manual_edit_mode == 1
     ):
         email_data = state.email
         edited_response = await state.ai_toolkit.edit_response(

@@ -47,8 +47,22 @@ def get_chat_gemini_response(
     return response
 
 
-def display_graph(compiled_graph):
+from langchain_core.runnables.graph import MermaidDrawMethod
+
+
+def display_graph(
+    compiled_graph, use_mermaid: bool = False, use_api: bool = False, max_retry: int = 1
+):
     """
     Display the image of the compiled graph.
     """
-    compiled_graph.get_graph().draw_mermaid_png()
+    if use_mermaid:
+        compiled_graph.get_graph().draw_mermaid_png(
+            output_file_path="graph.png",
+            draw_method=(
+                MermaidDrawMethod.PYPPETEER if not use_api else MermaidDrawMethod.API
+            ),
+            max_retries=max_retry,
+        )
+    else:
+        compiled_graph.get_graph().draw_png()
