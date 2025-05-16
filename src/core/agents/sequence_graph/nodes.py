@@ -1,3 +1,4 @@
+import time
 from typing import List
 from .states import SequenceState
 from src.core.gmail.status import GmailToolKitRunningStatus
@@ -14,8 +15,9 @@ def start_gmail_toolkit(state: SequenceState):
         and state.gmail_toolkit_status == GmailToolKitRunningStatus.STOPED
         and state.gmail_toolkit_status != GmailToolKitRunningStatus.PAUSED
     ):
-        print("yes")
+        # print("yes")
         state.gmail_tool.start()
+        time.sleep(5)
 
         return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
 
@@ -41,6 +43,7 @@ def resume_gmail_toolkit(state: SequenceState):
         and state.gmail_toolkit_status != GmailToolKitRunningStatus.STOPED
     ):
         state.gmail_tool.resume()
+        time.sleep(5)
         return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
 
 
@@ -69,18 +72,16 @@ def read_emails_json(state: SequenceState):
     Read emails from the email reader and update the state with the email data.
     Asynch method (blocking), so that start on next node execution is awaited till the emails are read.
     """
-    state.gmail_tool.wait_for_data(file_path="emails.json")
-
     email_reader = JSONEmailReader()
     emails: List[dict] = email_reader.get_all_email_content()
 
     if not isinstance(emails, list) or not emails:
         print("No emails found.")
-        print(emails)
+        # print(emails)
         return None
 
     return {
-        "email": emails,
+        "email": emails[0],
     }  # Return the first valid email data found
 
 
@@ -103,7 +104,7 @@ def analyze_importance(state: SequenceState):
     }
 
 
-async def summarize_email(state: SequenceState):
+def summarize_email(state: SequenceState):
     """
     Summarize the email using the AI toolkit.
     """
@@ -111,13 +112,14 @@ async def summarize_email(state: SequenceState):
         return None
     if state.is_mail_important:
         email_data = state.email
-        summary = await state.ai_toolkit.summarize_email(
+        summary = state.ai_toolkit.summarize_email(
             email_data=email_data, json_output=True
         )
+        print(f"Summary: {summary}")
         return {"email_summary": summary.get("output")}
 
 
-async def is_response_needed(state: SequenceState):
+def is_response_needed(state: SequenceState):
     """
     Check if a response is needed for the email using the AI toolkit.
     """
@@ -125,14 +127,14 @@ async def is_response_needed(state: SequenceState):
         return None
     if state.is_mail_important:
         email_data = state.email
-        response_needed = await state.ai_toolkit.is_response_needed(
+        response_needed = state.ai_toolkit.is_response_needed(
             email_data=email_data, json_output=True
         )
         decision2 = response_needed.get("output", "").lower().strip()
         return {"is_response_needed": decision2 == "yes"}
 
 
-async def mail_response_format(state: SequenceState):
+def mail_response_format(state: SequenceState):
     """
     Get the response format for the email using the AI toolkit.
     """
@@ -140,14 +142,14 @@ async def mail_response_format(state: SequenceState):
         return None
     if state.is_mail_important and state.is_response_needed:
         email_data = state.email
-        format_response = await state.ai_toolkit.mail_response_format(
+        format_response = state.ai_toolkit.mail_response_format(
             email_data=email_data, json_output=True
         )
         response_format = format_response.get("output", "").lower().strip()
         return {"response_format": response_format}
 
 
-async def generate_draft_response(state: SequenceState):
+def generate_draft_response(state: SequenceState):
     """
     Generate a response for the email using the AI toolkit.
     """
@@ -155,7 +157,7 @@ async def generate_draft_response(state: SequenceState):
         return None
     if state.is_mail_important and state.is_response_needed:
         email_data = state.email
-        response_suggestion = await state.ai_toolkit.generate_response(
+        response_suggestion = state.ai_toolkit.generate_response(
             email_data=email_data,
             json_output=True,
             style=state.response_format,
@@ -164,13 +166,14 @@ async def generate_draft_response(state: SequenceState):
         return {"response_email_draft": response_text}
 
 
-async def get_response_approval(state: SequenceState):
+def get_response_approval(state: SequenceState):
     """
     Get the response approval from the user.
     """
     # Simulate user approval for the response
+    print(f"Draft: {state.response_email_draft}")
     input_text = (
-        await input("Do you approve the draft response to be sent? (yes/no): ")
+        input("Do you approve the draft response to be sent? (yes/no): ")
         .strip()
         .lower()
     )
@@ -184,14 +187,14 @@ async def get_response_approval(state: SequenceState):
     return {"response_approved": user_approval}
 
 
-async def get_draft_edit_mode(state: SequenceState):
+def get_draft_edit_mode(state: SequenceState):
     """
     Get the draft edit mode from the user.
     This is a function which lets users choose the edit mode of draft (manual/auto).
     """
     # Simulate user selecting the draft edit mode
     input_text = (
-        await input(
+        input(
             "How do you want to edit the draft? (manual: 0/auto: 1/ skip response: 2): "
         )
         .strip()
@@ -208,20 +211,20 @@ async def get_draft_edit_mode(state: SequenceState):
         return None
 
 
-async def get_edited_response(state: SequenceState):
+def get_edited_response(state: SequenceState):
     """
     Get the edited response from the user.
     """
     # Simulate user editing the response
     print("Current response draft:")
     print(state.response_email_draft)
-    input_text = await input("Please edit the response: ").strip()
+    input_text = input("Please edit the response: ").strip()
     if input_text:
         return {"response_email_draft": input_text}
     return None
 
 
-async def auto_edit_response(state: SequenceState):
+def auto_edit_response(state: SequenceState):
     """
     Auto edit the response for the email using the AI toolkit (LLM) by giving customization instruction.
     """
@@ -234,7 +237,7 @@ async def auto_edit_response(state: SequenceState):
         and state.draft_manual_edit_mode == 1
     ):
         email_data = state.email
-        edited_response = await state.ai_toolkit.edit_response(
+        edited_response = state.ai_toolkit.edit_response(
             email_data=email_data,
             draft_mail=state.response_email_draft,
             json_output=True,
@@ -244,7 +247,7 @@ async def auto_edit_response(state: SequenceState):
         return {"response_edited": edited_response_text}
 
 
-async def send_email_response(state: SequenceState):
+def send_email_response(state: SequenceState):
     """
     Send the response for the email using the Gmail toolkit.
     """
