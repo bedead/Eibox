@@ -23,9 +23,9 @@ SCOPES = [
 class GmailToolKit:
     def __init__(
         self,
-        creds_file: FilePath = "creds.json",
-        token_file: FilePath = "token.pickle",
-        json_file: FilePath = "emails.json",
+        creds_file: FilePath = "/backend/creds.json",
+        token_file: FilePath = "/backend/token.pickle",
+        json_file: FilePath = "/backend/emails.json",
         interval: int = 5,
         max_results: int = 1,
         date=None,
