@@ -2,6 +2,9 @@ from datetime import datetime
 import logging
 import os
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def _basic_config() -> None:
@@ -16,7 +19,7 @@ def _basic_config() -> None:
 def _get_log_filename() -> str:
     """Generate a valid log filename using current timestamp"""
     timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    return f"./logs/{timestamp}.log"
+    return f"./{os.environ.get('LOG_FOLDER_NAME')}/{timestamp}.log"
 
 
 def setup_logging(
@@ -28,7 +31,7 @@ def setup_logging(
 
     env = log_type or os.environ.get("LOG_TYPE")
     print(f"log env: {env}")
-    file_path = log_file or os.environ.get("LOG_FILE_PATH", _get_log_filename())
+    file_path = _get_log_filename()
     fh = logging.FileHandler(filename=file_path)
     ch = logging.StreamHandler()
 

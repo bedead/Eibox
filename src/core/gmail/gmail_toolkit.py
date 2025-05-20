@@ -20,12 +20,18 @@ SCOPES = [
 ]
 
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
 class GmailToolKit:
     def __init__(
         self,
-        creds_file: FilePath = "/backend/creds.json",
-        token_file: FilePath = "/backend/token.pickle",
-        json_file: FilePath = "/backend/emails.json",
+        creds_file: FilePath = os.getenv("GCP_CREDS_FILE"),
+        token_file: FilePath = os.getenv("GCP_TOKEN_FILE"),
+        json_file: FilePath = os.getenv("GMAIL_DATA_SAVE_FILE"),
         interval: int = 5,
         max_results: int = 1,
         date=None,
