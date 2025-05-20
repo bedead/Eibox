@@ -5,16 +5,14 @@ from langgraph.types import Command
 
 
 def check_read_email_router(state: SequenceState):
-    return (
-        "resume_gmail_toolkit_node" if not state.email else "pause_gmail_toolkit_node"
-    )
+    return "read_email_json_node" if not state.email else "pause_gmail_toolkit_node"
 
 
 def email_importance_router(
     state: SequenceState,
 ):
     return (
-        "summarize_email_node"
+        Command(goto="summarize_email_node")
         if state.is_mail_important
         else "resume_gmail_toolkit_node"
     )
@@ -22,32 +20,38 @@ def email_importance_router(
 
 def is_response_needed_router(
     state: SequenceState,
-):
+) -> Command[Literal["mail_response_format_node", "resume_gmail_toolkit_node"]]:
     return (
-        "mail_response_format_node"
+        Command(goto="mail_response_format_node")
         if state.is_response_needed
-        else "resume_gmail_toolkit_node"
+        else Command(goto="resume_gmail_toolkit_node")
     )
 
 
 def get_response_approval_router(
     state: SequenceState,
-):
+) -> Command[Literal["send_email_response_node", "get_draft_edit_mode_node"]]:
     return (
-        "send_email_response_node"
+        Command(goto="send_email_response_node")
         if state.response_approved
-        else "get_draft_edit_mode_node"
+        else Command(goto="get_draft_edit_mode_node")
     )
 
 
 def get_draft_edit_mode_router(
     state: SequenceState,
-):
+) -> Command[
+    Literal[
+        "get_edited_response_node",
+        "auto_edit_response_node",
+        "resume_gmail_toolkit_node",
+    ]
+]:
     if state.draft_manual_edit_mode == 0:
-        return "get_edited_response_node"
+        return Command(goto="get_edited_response_node")
     elif state.draft_manual_edit_mode == 1:
-        return "auto_edit_response_node"
+        return Command(goto="auto_edit_response_node")
     elif state.draft_manual_edit_mode == 2:
-        return "resume_gmail_toolkit_node"
+        return Command(goto="resume_gmail_toolkit_node")
     else:
-        return END
+        return Command(goto=END)

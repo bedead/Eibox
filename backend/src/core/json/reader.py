@@ -20,7 +20,6 @@ class JSONEmailReader:
         try:
             with open(self.json_file, "r", encoding="utf-8") as file:
                 emails = json.load(file)
-                # print(emails)
                 return emails if isinstance(emails, list) else []
         except json.JSONDecodeError:
             self.logger.debug("Error: Unable to decode JSON file.")

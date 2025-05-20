@@ -29,8 +29,7 @@ GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT = dedent(
     detailed_reply (an elaborate reply with follow-up questions or information)
     forward (forward the email with a comment to another recipient)
     acknowledgement (confirm receipt of the email)
-    response_format: {style}
-    Only output the draft email.
+    response_format: {style}  
     """
 )
 

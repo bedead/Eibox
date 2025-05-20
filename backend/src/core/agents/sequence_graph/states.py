@@ -35,7 +35,7 @@ class SequenceState(BaseModel):
     gmail_tool: Optional[GmailToolKit] = GmailToolKit(
         max_results=1
     )  # Max results to 1, meaning only one email will be read at a time from google api
-    gmail_toolkit_status: Optional[GmailToolKitRunningStatus] = GmailToolKitRunningStatus.STOPED
+    gmail_toolkit_status: Optional[int] = GmailToolKitRunningStatus.STOPED
 
     # Model selection
     selected_model: Optional[ModelSelector] = ModelSelector(

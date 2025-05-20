@@ -204,7 +204,7 @@ class GmailToolKit:
                     # self.log(
                     #     f"New Email - From: {email['sender']}, Subject: {email['subject']}"
                     # )
-            # print(emails)
+
             return emails
         except Exception as e:
             self.logger.error(f"Error fetching emails: {str(e)}")
@@ -218,11 +218,9 @@ class GmailToolKit:
                 continue
 
             try:
-                # print("[MONITOR] Checking for new emails...")
                 self.recent_emails: List = self.check_emails(
                     max_results=max_results, date=date
                 )
-                # print(self.recent_emails)
                 if self.recent_emails:
                     self.save_emails_to_json(self.recent_emails)
 
@@ -243,9 +241,6 @@ class GmailToolKit:
                 args=(self.max_results, self.date),
             )
             self.monitor_thread.start()
-            print(
-                f"Thread Name: {self.monitor_thread.name}, ID: {self.monitor_thread.ident}"
-            )
             self.logger.debug("Started monitoring emails...")
         else:
             self.logger.debug("Monitoring is already active.")
