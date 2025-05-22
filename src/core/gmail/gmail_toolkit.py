@@ -73,10 +73,10 @@ class GmailToolKit:
                 creds.refresh(Request())
                 self.logger.debug("Token refreshed successfully.")
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(
+                flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(
                     self.creds_file, SCOPES
                 )
-                creds: Credentials = flow.run_local_server(port=8080)
+                creds: Credentials = self.get_available_port(flow=flow)
                 self.logger.debug("New token generated successfully.")
 
             with open(self.token_file, "wb") as token:
@@ -85,6 +85,18 @@ class GmailToolKit:
 
         self.service = build("gmail", "v1", credentials=creds)
         self.logger.debug("Authenticated successfully with Gmail API.")
+
+    def get_available_port(
+        self, flow: InstalledAppFlow, start_port=8080, max_attempts=2
+    ):
+        for port in range(start_port, start_port + max_attempts):
+            try:
+                creds = flow.run_local_server(port=port)
+                return creds
+            except PermissionError:
+                start_port += 1
+                continue
+        raise RuntimeError("Could not find an available port")
 
     def mark_email_as_read(self, service, message_id):
         """Marks an email as read by removing the UNREAD label."""
