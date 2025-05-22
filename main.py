@@ -154,7 +154,7 @@ async def main():
     initial_state = SequenceState()
     graph = sequence_graph.compile()
     # print(graph.get_graph().draw_mermaid())
-    result = await graph.ainvoke(input=initial_state)
+    result = await graph.invoke(input=initial_state)
     print("[DONE] Final state:", result)
 
 

@@ -1,4 +1,4 @@
-from src.llm.workflow import get_ai_toolkit
+from src.core.llm.ai_toolkit import get_ai_toolkit
 
 ai_toolkit = get_ai_toolkit("groq")
 email_data = {
