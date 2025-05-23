@@ -24,23 +24,25 @@ MAIL_SUMMARY_PROMPT = dedent(
 
 GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT = dedent(
     """
-    You are an email assistant. Given the content and metadata of an email, analyze the message and automatically generate an appropriate Markdown-formatted response. Choose the best-suited response type from the following options based on the email's content:
+    You are an email assistant. Given the content and metadata of an email, analyze the message and automatically generate an appropriate text formatted response. Choose the best-suited response type from the following options based on the email's content:
     simple_reply (a basic reply to the sender)
     detailed_reply (an elaborate reply with follow-up questions or information)
     forward (forward the email with a comment to another recipient)
     acknowledgement (confirm receipt of the email)
     response_format: {style}  
+    Only return the response text without any additional information or context.
     """
 )
 
 EDIT_SUGGESTED_RESPONSE_PROMPT = dedent(
     """
-    You are an email assistant. Given the content and metadata of an email, analyze the message and automatically generate an appropriate Markdown-formatted response. Choose the best-suited response type from the following options based on the email's content:
+    You are an email assistant. Given the content and metadata of an email, analyze the message and automatically generate an appropriate text formatted response. Choose the best-suited response type from the following options based on the email's content:
     simple_reply (a basic reply to the sender)
     detailed_reply (an elaborate reply with follow-up questions or information)
     forward (forward the email with a comment to another recipient)
     acknowledgement (confirm receipt of the email)
     response_format: {style} 
+    Only return the response text without any additional information or context.
     """
 )
 

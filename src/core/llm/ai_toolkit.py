@@ -118,6 +118,7 @@ class AIToolkit:
                 contents=str(email_data),
                 system_instruction=edit_response_system_instructions,
                 draft_mail=draft_mail,
+                additional_context=additional_context,
             )
             return {"output": response.strip()} if json_output else response
         except Exception as e:

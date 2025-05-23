@@ -25,17 +25,21 @@ class SequenceState(BaseModel):
     email_summary: Optional[str] = Field(default=None)
     is_response_needed: Optional[bool] = Field(default=None)
     response_format: Optional[str] = Field(default=None)
-    response_email_draft: Optional[str] = Field(default=None)
-    draft_manual_edit_mode : Optional[Literal[0, 1, 2]] = Field(default=None)
+    response_email_draft: Optional[str] = Field(default=None)  # Initial Draft response
+    draft_manual_edit_mode: Optional[Literal[0, 1, 2]] = Field(default=None)
     response_approved: Optional[bool] = Field(default=None)
     response_sent: Optional[bool] = Field(default=None)
-    response_edited: Optional[str] = Field(default=None)
+    response_edited: Optional[str] = Field(
+        default=None
+    )  # Edited draft response (Manually or Auto)
 
     # tracking gmail_toolkit running status
     gmail_tool: Optional[GmailToolKit] = GmailToolKit(
         max_results=1
     )  # Max results to 1, meaning only one email will be read at a time from google api
-    gmail_toolkit_status: Optional[int] = GmailToolKitRunningStatus.STOPED
+    gmail_toolkit_status: Optional[GmailToolKitRunningStatus] = (
+        GmailToolKitRunningStatus.STOPED
+    )
 
     # Model selection
     selected_model: Optional[ModelSelector] = ModelSelector(

@@ -134,7 +134,7 @@ class GmailToolKit:
             with open(self.json_file, "w") as file:
                 json.dump(existing_emails, file, indent=4)
 
-            print(f"Saved {len(new_emails)} new email(s) to {self.json_file}")
+            # print(f"Saved {len(new_emails)} new email(s) to {self.json_file}")
 
     def get_email_content(self, message_id):
         """Retrieve email content given the email ID."""
