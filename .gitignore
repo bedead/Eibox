@@ -5,6 +5,7 @@ emails.json
 venv
 logs/
 *.log
+token.json
 
 # Ignore Python cache files
 __pycache__/
