@@ -1,9 +1,10 @@
 import time
 from typing import List
 from .states import SequenceState
-from src.core.gmail.status import GmailToolKitRunningStatus
+from src.core.gmail import GmailToolKitRunningStatus
 from src.core.json.reader import JSONEmailReader
-from strip_markdown import strip_markdown
+# from strip_markdown import strip_markdown
+from langgraph.types import interrupt
 
 
 def start_gmail_toolkit(state: SequenceState):
@@ -179,13 +180,15 @@ def get_response_approval(state: SequenceState):
     """
     # Simulate user approval for the response
     print("Draft response:")
-    print(state.response_email_draft)
-    input_text = (
-        input("Do you approve the draft response to be sent? (y/n): ").strip().lower()
+    print(
+        state.response_edited if state.response_edited else state.response_email_draft
     )
-    if input_text == "y":
+    is_approved = interrupt(
+        {"question": "Do you approve the draft response to be sent? (y/n):"}
+    )
+    if is_approved == "y":
         user_approval = True
-    elif input_text == "n":
+    elif is_approved == "n":
         user_approval = False
     else:
         print("Invalid input. Please enter 'y' or 'n'.")
@@ -199,21 +202,19 @@ def get_draft_edit_mode(state: SequenceState):
     This is a function which lets users choose the edit mode of draft (manual/auto).
     """
     # Simulate user selecting the draft edit mode
-    input_text = (
-        input(
-            "How do you want to edit the draft? (manual: 0/auto: 1/ skip response: 2): "
-        )
-        .strip()
-        .lower()
+    edit_mode = interrupt(
+        {
+            "question": "How do you want to edit the draft? (manual: 0/auto: 1/ skip response: 2):"
+        }
     )
-    if input_text == "0":
+    if edit_mode == 0:
         return {"draft_manual_edit_mode": 0}
-    elif input_text == "1":
+    elif edit_mode == 1:
         return {"draft_manual_edit_mode": 1}
-    elif input_text == "2":
+    elif edit_mode == 2:
         return {"draft_manual_edit_mode": 2}
     else:
-        print("Invalid input. Please enter '0' or '1' or '2'.")
+        print("Invalid input. Please enter 0 or 1 or 2.")
         return None
 
 
@@ -222,9 +223,9 @@ def get_edited_response(state: SequenceState):
     Get the edited response from the user.
     """
     # Simulate user editing the response
-    input_text = input("Please edit the response: ").strip()
-    if input_text:
-        return {"response_email_draft": input_text}
+    manual_edited_draft = interrupt({"question": "Please edit the response:"})
+    if manual_edited_draft:
+        return {"response_email_draft": manual_edited_draft}
     return None
 
 
@@ -240,9 +241,9 @@ def auto_edit_response(state: SequenceState):
         and state.response_email_draft != None
         and state.draft_manual_edit_mode == 1
     ):
-        customization_instruction = input(
-            "Please provide customization instruction for the response: "
-        ).strip()
+        customization_instruction = interrupt(
+            {"question": "Please provide customization instruction for the response:"}
+        )
         email_data = state.email
         edited_response = state.ai_toolkit.edit_response(
             email_data=email_data,

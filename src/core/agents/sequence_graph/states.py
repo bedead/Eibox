@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.core.gmail.gmail_toolkit import GmailToolKit
+from src.core.gmail import GmailToolKit
 from src.core.gmail.status import GmailToolKitRunningStatus
 from src.core.llm.providers.types.model_selector import ModelSelector
 from src.core.llm.providers.types.models_google import GoogleModel
