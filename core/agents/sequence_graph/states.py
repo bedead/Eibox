@@ -1,12 +1,12 @@
 from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.core.gmail import GmailToolKit
-from src.core.gmail.status import GmailToolKitRunningStatus
-from src.core.llm.providers.types.model_selector import ModelSelector
-from src.core.llm.providers.types.models_google import GoogleModel
-from src.core.llm.providers.types.providers import BaseProvider
-from src.core.llm.ai_toolkit import AIToolkit, get_ai_toolkit
+from core.gmail import GmailToolKit
+from core.gmail.status import GmailToolKitRunningStatus
+from core.llm.providers.types.model_selector import ModelSelector
+from core.llm.providers.types.models_google import GoogleModel
+from core.llm.providers.types.providers import BaseProvider
+from core.llm.ai_toolkit import AIToolkit, get_ai_toolkit
 
 
 class SequenceState(BaseModel):

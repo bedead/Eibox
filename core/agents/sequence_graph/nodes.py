@@ -1,9 +1,8 @@
 import time
 from typing import List
 from .states import SequenceState
-from src.core.gmail import GmailToolKitRunningStatus
-from src.core.json.reader import JSONEmailReader
-# from strip_markdown import strip_markdown
+from core.gmail import GmailToolKitRunningStatus
+from core.json import JSONEmailReader
 from langgraph.types import interrupt
 
 

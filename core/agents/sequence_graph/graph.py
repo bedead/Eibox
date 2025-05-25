@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 
-from src.core.utils.utils import display_graph
+from core.utils.utils import display_graph
 from .nodes import (
     analyze_importance,
     auto_edit_response,
@@ -153,11 +153,9 @@ def create_sequence_graph() -> StateGraph:
     return sequence_graph
 
 
-from langgraph.config import RunnableConfig
 
 
 initial_state = SequenceState()
 checkpointer = InMemorySaver()
-config = RunnableConfig(recursion_limit=150, configurable={"thread_id": 42})
 graph = create_sequence_graph().compile(checkpointer=checkpointer, debug=True)
 # display_graph(graph, use_mermaid=True, use_api=True)
