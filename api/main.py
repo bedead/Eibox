@@ -2,31 +2,36 @@ from fastapi import FastAPI, WebSocket
 from pydantic import BaseModel
 from langgraph.config import RunnableConfig
 from core import *
+from fastapi.middleware.cors import CORSMiddleware
+from langgraph.types import Command
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # can alter with time
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-class StartAgent(BaseModel):
-    thread_id: int
-    running: bool
 
+@app.websocket("/ws/{thread_id}")
+async def websocket_endpoint(thread_id: int, websocket: WebSocket):
+    await websocket.accept()
 
-def initialize_graph(config: RunnableConfig):
-    # Initialize the graph with a default thread_id
-    initial_state = SequenceState()
-    result = graph.ainvoke(initial_state, config=config)
-    return result
-
-
-@app.post("/chat")
-async def chat(input: StartAgent):
-    if input.running:
+    while True:
+        input = SequenceState()
         config = RunnableConfig(
-            recursion_limit=150, configurable={"thread_id": input.thread_id}
+            recursion_limit=20, configurable={"thread_id": thread_id}
         )
-        print(f"Input Thread ID: {input.thread_id}")
-        result = initialize_graph(config=config)
-
-    print(f"Chat result: {result}")
-
-    return result
+        async for chunk in graph.astream(
+            input=input, config=config, stream_mode="values"
+        ):
+            for id, value in chunk.items():
+                if id == "__interrupt__":
+                    # Send the received data to the other user
+                    question = value["question"]
+                    await websocket.send_text(question)
+                    response = await websocket.receive_text()
+                    await graph.ainvoke(Command(resume=response), config=config)
