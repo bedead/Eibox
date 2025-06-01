@@ -14,3 +14,6 @@ class ModelSelector:
 
     def get_model_string(self):
         return self.model.value
+    
+    def get_provider_string(self):
+        return self.provider.value

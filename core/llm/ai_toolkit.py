@@ -171,9 +171,9 @@ from .providers.types.model_selector import ModelSelector
 # Usage example:
 def get_ai_toolkit(model: ModelSelector) -> AIToolkit:
     try:
-        if model.provider.value == BaseProvider.GOOGLE.value:
+        if model.get_provider_string() == BaseProvider.GOOGLE.value:
             llm = GeminiLLM(model_name=model.get_model_string())
-        elif model.provider.value == BaseProvider.GROQ.value:
+        elif model.get_provider_string() == BaseProvider.GROQ.value:
             llm = GroqLLM(model_name=model.get_model_string())
     except ValueError as e:
         raise ValueError(

@@ -5,7 +5,7 @@ import base64
 import threading
 import pickle
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -298,8 +298,18 @@ class GmailToolKit:
     def get_mails(self):
         return self.recent_emails
 
-    def send_mail(self, to, subject, body):
-        """Send an email using the Gmail API."""
+    def send_mail(self, to, subject, body) -> Dict[str, Any]:
+        """
+        Send an email using the Gmail API.
+        Args:
+            to (str): Recipient email address.
+            subject (str): Subject of the email.
+            body (str): Body content of the email.
+        Returns:
+            status (Dict[str, Any]): A dictionary containing the success status and message.
+            {"success": bool, "message": str}
+        """
+        status = {}
         try:
             message = {
                 "raw": base64.urlsafe_b64encode(
@@ -308,8 +318,14 @@ class GmailToolKit:
             }
             self.service.users().messages().send(userId="me", body=message).execute()
             self.logger.debug(f"Email sent to {to} with subject '{subject}'")
+            status["success"] = True
+            status["message"] = f"Email sent to {to} with subject '{subject}'"
+            return status
         except Exception as e:
+            status["success"] = False
+            status["message"] = f"Error sending email: {str(e)}"
             self.logger.error(f"Error sending email: {str(e)}")
+            return status
 
 
 # Example usage

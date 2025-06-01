@@ -1,7 +1,8 @@
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 
-from core.utils.utils import display_graph
+from core.utils.utils import SafePydanticSerializer
+
 from .nodes import (
     analyze_importance,
     auto_edit_response,
@@ -153,9 +154,15 @@ def create_sequence_graph() -> StateGraph:
     return sequence_graph
 
 
-
-
-initial_state = SequenceState()
-checkpointer = InMemorySaver()
+checkpointer = InMemorySaver(
+    serde=SafePydanticSerializer(
+        exclude_fields={
+            "gmail_tool",
+            "ai_toolkit",
+            "selected_model",
+            "gmail_toolkit_status",
+        }
+    )
+)
 graph = create_sequence_graph().compile(checkpointer=checkpointer, debug=True)
 # display_graph(graph, use_mermaid=True, use_api=True)
