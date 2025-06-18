@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-class GmailToolKit():
+class GmailToolKit:
     def __init__(
         self,
         run_as_thread: bool = False,
@@ -37,6 +37,7 @@ class GmailToolKit():
         max_results: int = 1,
         date=None,
     ):
+        self.run_as_thread = run_as_thread
         self.recent_emails: List = []
         self.max_results = max_results
         self.date = date
@@ -250,19 +251,34 @@ class GmailToolKit():
                 self.logger.error(f"Error in background monitoring: {str(e)}")
 
     def start(self):
-        """Start monitoring emails in a background thread."""
-        if not self.monitoring_active:
-            self.monitoring_active = True
-            self.paused = False
+        """Start monitoring emails either in background thread or directly."""
+        if self.monitoring_active:
+            self.logger.debug("Monitoring is already active.")
+            return
+
+        self.monitoring_active = True
+        self.paused = False
+
+        if self.run_as_thread:
             self.monitor_thread = threading.Thread(
                 target=self.background_monitor,
                 daemon=True,
                 args=(self.max_results, self.date),
             )
             self.monitor_thread.start()
-            self.logger.debug("Started monitoring emails...")
+            self.logger.debug("Started monitoring emails in background thread...")
         else:
-            self.logger.debug("Monitoring is already active.")
+            # Run directly in the current thread
+            try:
+                self.recent_emails = self.check_emails(
+                    max_results=self.max_results, date=self.date
+                )
+                if self.recent_emails:
+                    self.save_emails_to_json(self.recent_emails)
+                self.last_check_time = datetime.now()
+            except Exception as e:
+                self.logger.error(f"Error in monitoring: {str(e)}")
+            self.logger.debug("Completed single email check...")
 
     def wait_for_data(self, file_path: str, timeout: int = 10):
         start_time = time.time()
@@ -272,10 +288,10 @@ class GmailToolKit():
             time.sleep(0.5)
 
     def stop(self):
-        """Stop the background monitoring thread."""
+        """Stop the monitoring process."""
         self.monitoring_active = False
         self.logger.debug("Stopped monitoring emails.")
-        if self.monitor_thread:
+        if self.run_as_thread and self.monitor_thread:
             self.monitor_thread.join()
 
     def pause(self):
