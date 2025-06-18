@@ -3,7 +3,7 @@ from google import genai
 from dotenv import load_dotenv
 import os
 from google.genai.types import GenerateContentConfig
-from typing import List
+from typing import Dict, List, Any, Optional
 
 
 load_dotenv()
@@ -71,64 +71,157 @@ def display_graph(
 
 
 from langgraph.checkpoint.base import SerializerProtocol
-from pydantic import BaseModel
-from typing import Any, Tuple
-import orjson
-from core.agents.sequence_graph.states import SequenceState
-
-import orjson
-from enum import Enum
-from pydantic import BaseModel
-from typing import Any, Tuple, Type
-
-from core.agents.sequence_graph.states import SequenceState  # Import your model(s)
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 
 
-class SafePydanticSerializer:
-    def __init__(self, exclude_fields: set = None):
-        self.EXCLUDE_FIELDS = exclude_fields or {
-            "gmail_tool",
-            "ai_toolkit",
-            "selected_model",
-            "gmail_toolkit_status",
-        }
+class ObjectMetadataSerializer(SerializerProtocol):
+    """Custom serializer that stores object metadata and reconstructs objects on load."""
 
-        # 👇 Register all known models you want to auto-rehydrate
-        self.model_registry: dict[str, Type[BaseModel]] = {
-            "SequenceState": SequenceState,
-            # Add more as needed
-        }
+    def __init__(self, base_serializer: Optional[SerializerProtocol] = None):
+        self.base_serializer = base_serializer or JsonPlusSerializer()
+
+    def _serialize_special_objects(self, obj: Any) -> Any:
+        """Convert special objects to metadata representations."""
+        if isinstance(obj, dict):
+            return {k: self._serialize_special_objects(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return type(obj)(self._serialize_special_objects(item) for item in obj)
+
+        obj_class_name = obj.__class__.__name__
+
+        if obj_class_name == "GmailToolKit":
+            return {
+                "__object_type__": "GmailToolKit",
+                "__metadata__": {
+                    "max_results": getattr(obj, "max_results", 1),
+                    "status": "initialized",
+                },
+            }
+        elif obj_class_name == "GmailToolKitRunningStatus":
+            return {
+                "__object_type__": "GmailToolKitRunningStatus",
+                "__metadata__": {
+                    "value": obj.value if hasattr(obj, "value") else str(obj)
+                },
+            }
+        elif obj_class_name == "ModelSelector":
+            return {
+                "__object_type__": "ModelSelector",
+                "__metadata__": {
+                    "model_name": getattr(obj, "model_name", "default"),
+                    "provider": getattr(obj, "provider", "default"),
+                },
+            }
+        elif obj_class_name == "AIToolkit":
+            model_info = getattr(obj, "model", None)
+            if (
+                model_info
+                and hasattr(model_info, "__class__")
+                and model_info.__class__.__name__ == "ModelSelector"
+            ):
+                return {
+                    "__object_type__": "AIToolkit",
+                    "__metadata__": {
+                        "model_name": getattr(model_info, "model_name", "default"),
+                        "provider": getattr(model_info, "provider", "default"),
+                        "status": "initialized",
+                    },
+                }
+
+        return obj
+
+    def _deserialize_special_objects(self, obj: Any) -> Any:
+        """Reconstruct objects from metadata representations."""
+        if isinstance(obj, dict):
+            # Handle the case where the entire dict might be a serialized object
+            if "__object_type__" in obj:
+                return self._reconstruct_object(obj)
+
+            # Process nested dictionaries
+            result = {}
+            model_selector_cache = {}
+
+            # First pass: find and reconstruct ModelSelector objects
+            for k, v in obj.items():
+                if isinstance(v, dict) and v.get("__object_type__") == "ModelSelector":
+                    model_selector_cache[k] = self._reconstruct_object(v)
+
+            # Second pass: reconstruct all objects
+            for k, v in obj.items():
+                if isinstance(v, dict) and "__object_type__" in v:
+                    if v["__object_type__"] == "ModelSelector":
+                        result[k] = model_selector_cache[k]
+                    elif v["__object_type__"] == "AIToolkit":
+                        # Use the cached ModelSelector if available
+                        model_selector = model_selector_cache.get("selected_model")
+                        if model_selector:
+                            from core.llm.ai_toolkit import get_ai_toolkit
+
+                            result[k] = get_ai_toolkit(model=model_selector)
+                        else:
+                            result[k] = self._reconstruct_object(v)
+                    else:
+                        result[k] = self._reconstruct_object(v)
+                else:
+                    result[k] = self._deserialize_special_objects(v)
+
+            return result
+        elif isinstance(obj, (list, tuple)):
+            return type(obj)(self._deserialize_special_objects(item) for item in obj)
+
+        return obj
+
+    def _reconstruct_object(self, obj_dict: Dict[str, Any]) -> Any:
+        """Reconstruct a single object from its metadata."""
+        obj_type = obj_dict["__object_type__"]
+        metadata = obj_dict["__metadata__"]
+
+        if obj_type == "GmailToolKit":
+            from core.gmail.gmail_toolkit import GmailToolKit
+
+            return GmailToolKit(max_results=metadata.get("max_results", 1))
+
+        elif obj_type == "GmailToolKitRunningStatus":
+            from core.gmail.status import GmailToolKitRunningStatus
+
+            return GmailToolKitRunningStatus.PAUSED
+
+        elif obj_type == "ModelSelector":
+            from core.llm.providers.types.model_selector import ModelSelector
+
+            return ModelSelector(
+                model=metadata.get("model_name", "default"),
+                provider=metadata.get("provider", "default"),
+            )
+
+        elif obj_type == "AIToolkit":
+            from core.llm.ai_toolkit import get_ai_toolkit
+            from core.llm.providers.types.model_selector import ModelSelector
+
+            model_selector = ModelSelector(
+                model=metadata.get("model_name", "default"),
+                provider=metadata.get("provider", "default"),
+            )
+            return get_ai_toolkit(model=model_selector)
+
+        return obj_dict  # Fallback
+
+    def dumps_typed(self, obj: Any) -> tuple[str, bytes]:
+        """Serialize object, converting special objects to metadata."""
+        processed_obj = self._serialize_special_objects(obj)
+        return self.base_serializer.dumps_typed(processed_obj)
+
+    def loads_typed(self, data: tuple[str, bytes]) -> Any:
+        """Deserialize object, reconstructing special objects from metadata."""
+        obj = self.base_serializer.loads_typed(data)
+        return self._deserialize_special_objects(obj)
 
     def dumps(self, obj: Any) -> bytes:
-        return orjson.dumps(self._sanitize(obj))
+        """Serialize object to bytes."""
+        processed_obj = self._serialize_special_objects(obj)
+        return self.base_serializer.dumps(processed_obj)
 
     def loads(self, data: bytes) -> Any:
-        return orjson.loads(data)
-
-    def dumps_typed(self, obj: Any) -> Tuple[str, bytes]:
-        type_name = type(obj).__name__
-        return type_name, self.dumps(obj)
-
-    def loads_typed(self, data: Tuple[str, bytes]) -> Any:
-        type_name, payload = data
-        raw = self.loads(payload)
-
-        if isinstance(raw, dict) and type_name in self.model_registry:
-            model_cls = self.model_registry[type_name]
-            return model_cls(**raw)
-
-        return raw
-
-    def _sanitize(self, obj: Any) -> Any:
-        if isinstance(obj, BaseModel):
-            return obj.model_dump(exclude=self.EXCLUDE_FIELDS)
-        elif isinstance(obj, Enum):
-            return obj.value
-        elif isinstance(obj, dict):
-            return {k: self._sanitize(v) for k, v in obj.items()}
-        elif isinstance(obj, (list, tuple)):
-            return [self._sanitize(i) for i in obj]
-        elif hasattr(obj, "__str__"):
-            return str(obj)  # Fallback
-        else:
-            return obj
+        """Deserialize object from bytes."""
+        obj = self.base_serializer.loads(data)
+        return self._deserialize_special_objects(obj)

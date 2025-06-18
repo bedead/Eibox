@@ -12,7 +12,7 @@ from google.auth.transport.requests import Request
 from datetime import datetime, timedelta
 import logging
 from google.oauth2.credentials import Credentials
-from pydantic import FilePath
+from pydantic import BaseModel, FilePath
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
@@ -26,9 +26,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-class GmailToolKit:
+class GmailToolKit():
     def __init__(
         self,
+        run_as_thread: bool = False,
         creds_file: FilePath = os.getenv("GCP_CREDS_FILE"),
         token_file: FilePath = os.getenv("GCP_TOKEN_FILE"),
         json_file: FilePath = os.getenv("GMAIL_DATA_SAVE_FILE"),

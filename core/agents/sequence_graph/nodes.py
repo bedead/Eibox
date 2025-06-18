@@ -1,7 +1,7 @@
 import time
 from typing import List
 from .states import SequenceState
-from core.gmail import GmailToolKitRunningStatus
+from core.gmail import Status
 from core.json import JSONEmailReader
 from langgraph.types import interrupt, Command
 from langgraph.graph import END

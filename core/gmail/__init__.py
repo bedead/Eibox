@@ -1,7 +1,7 @@
 from .gmail_toolkit import GmailToolKit
-from .status import GmailToolKitRunningStatus
+from .status import Status
 
 __all__ = [
     "GmailToolKit",
-    "GmailToolKitRunningStatus",
+    "Status",
 ]

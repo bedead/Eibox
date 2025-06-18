@@ -1,8 +1,10 @@
 from langgraph.graph import StateGraph, START, END
+
 from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
 
-from core.utils.utils import SafePydanticSerializer
-
+# from core.utils.utils import ObjectMetadataSerializer
+import sqlite3
 from .nodes import (
     analyze_importance,
     auto_edit_response,
@@ -154,15 +156,7 @@ def create_sequence_graph() -> StateGraph:
     return sequence_graph
 
 
-checkpointer = InMemorySaver(
-    serde=SafePydanticSerializer(
-        exclude_fields={
-            "gmail_tool",
-            "ai_toolkit",
-            "selected_model",
-            "gmail_toolkit_status",
-        }
-    )
-)
-graph = create_sequence_graph().compile(checkpointer=checkpointer, debug=True)
+# conn = sqlite3.connect("checkpoints.sqlite")
+# checkpointer = SqliteSaver(conn)
+graph = create_sequence_graph().compile(checkpointer=InMemorySaver(), debug=True)
 # display_graph(graph, use_mermaid=True, use_api=True)

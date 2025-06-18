@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Optional
 import logging
 
 from google.genai.chats import Chat
+from pydantic import BaseModel
 
 from .base_llm import BaseLLMArch
 from .providers.google import GeminiLLM
@@ -20,7 +21,7 @@ from ..utils.prompts import (
 )
 
 
-class AIToolkit:
+class AIToolkit(BaseModel):
     def __init__(self, llm: BaseLLMArch):
         self.llm: BaseLLMArch = llm
         self.chat_instance: Chat = None
