@@ -1,6 +1,10 @@
-import uvicorn
-from .api import app
+from core import graph
+from core.utils.utils import display_graph
 
+# display_graph(
+#     graph,
+#     use_mermaid=True,
+#     use_api=True,
+# )
 
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=5000, log_level="info")
+print(graph.get_graph().draw_mermaid())

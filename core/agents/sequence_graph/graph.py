@@ -1,10 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.checkpoint.sqlite import SqliteSaver
 
-# from core.utils.utils import ObjectMetadataSerializer
-import sqlite3
 from .nodes import (
     analyze_importance,
     auto_edit_response,
@@ -14,13 +11,8 @@ from .nodes import (
     get_response_approval,
     is_response_needed,
     mail_response_format,
-    pasue_gmail_toolkit,
-    read_emails_json,
     send_email_response,
-    start_gmail_toolkit,
-    resume_gmail_toolkit,
-    stop_gmail_toolkit,
-    restart_gmail_toolkit,
+    get_gmail_toolkit,
     summarize_email,
 )
 from .routes import (
@@ -41,26 +33,9 @@ def create_sequence_graph() -> StateGraph:
 
     # Add nodes to the graph
     sequence_graph.add_node(
-        node="start_gmail_toolkit_node",
-        action=start_gmail_toolkit,
+        node="get_gmail_toolkit_node",
+        action=get_gmail_toolkit,
     )
-    sequence_graph.add_node(
-        node="pause_gmail_toolkit_node",
-        action=pasue_gmail_toolkit,
-    )
-    sequence_graph.add_node(
-        node="resume_gmail_toolkit_node",
-        action=resume_gmail_toolkit,
-    )
-    sequence_graph.add_node(
-        node="stop_gmail_toolkit_node",
-        action=stop_gmail_toolkit,
-    )
-    sequence_graph.add_node(
-        node="restart_gmail_toolkit_node",
-        action=restart_gmail_toolkit,
-    )
-    sequence_graph.add_node(node="read_email_json_node", action=read_emails_json)
     sequence_graph.add_node(
         node="analyze_mail_importance_node",
         action=analyze_importance,
@@ -97,33 +72,30 @@ def create_sequence_graph() -> StateGraph:
     )
 
     # Add edges to the graph
-    sequence_graph.add_edge(START, "start_gmail_toolkit_node")
-    sequence_graph.add_edge("start_gmail_toolkit_node", "read_email_json_node")
+    sequence_graph.add_edge(START, "get_gmail_toolkit_node")
     sequence_graph.add_conditional_edges(
-        source="read_email_json_node",
+        source="get_gmail_toolkit_node",
         path=check_read_email_router,
         path_map={
-            "read_email_json_node": "read_email_json_node",
-            "pause_gmail_toolkit_node": "pause_gmail_toolkit_node",
+            "get_gmail_toolkit_node": "get_gmail_toolkit_node",
+            "analyze_mail_importance_node": "analyze_mail_importance_node",
         },
     )
-    sequence_graph.add_edge("pause_gmail_toolkit_node", "analyze_mail_importance_node")
     sequence_graph.add_conditional_edges(
         source="analyze_mail_importance_node",
         path=email_importance_router,
         path_map={
             "summarize_email_node": "summarize_email_node",
-            "resume_gmail_toolkit_node": "resume_gmail_toolkit_node",
+            "get_gmail_toolkit_node": "get_gmail_toolkit_node",
         },
     )
-    sequence_graph.add_edge("resume_gmail_toolkit_node", "read_email_json_node")
     sequence_graph.add_edge("summarize_email_node", "is_response_needed_node")
     sequence_graph.add_conditional_edges(
         source="is_response_needed_node",
         path=is_response_needed_router,
         path_map={
             "mail_response_format_node": "mail_response_format_node",
-            "resume_gmail_toolkit_node": "resume_gmail_toolkit_node",
+            "get_gmail_toolkit_node": "get_gmail_toolkit_node",
         },
     )
 
@@ -145,7 +117,7 @@ def create_sequence_graph() -> StateGraph:
         path_map={
             "get_edited_response_node": "get_edited_response_node",
             "auto_edit_response_node": "auto_edit_response_node",
-            "resume_gmail_toolkit_node": "resume_gmail_toolkit_node",
+            "get_gmail_toolkit_node": "get_gmail_toolkit_node",
         },
     )
     sequence_graph.add_edge("auto_edit_response_node", "get_response_approval_node")
@@ -159,4 +131,4 @@ def create_sequence_graph() -> StateGraph:
 # conn = sqlite3.connect("checkpoints.sqlite")
 # checkpointer = SqliteSaver(conn)
 graph = create_sequence_graph().compile(checkpointer=InMemorySaver(), debug=True)
-# display_graph(graph, use_mermaid=True, use_api=True)
+# print(graph.get_graph().draw_mermaid())

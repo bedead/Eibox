@@ -1,106 +1,23 @@
 import time
-from typing import List
 from .states import SequenceState
-from core.gmail import Status
-from core.json import JSONEmailReader
 from langgraph.types import interrupt, Command
 from langgraph.graph import END
+from core.gmail import GmailToolKit
 
 
-def start_gmail_toolkit(state: SequenceState):
+def get_gmail_toolkit(state: SequenceState):
     """
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
-    if (
-        state.gmail_toolkit_status != GmailToolKitRunningStatus.RUNNING
-        and state.gmail_toolkit_status == GmailToolKitRunningStatus.STOPED
-        and state.gmail_toolkit_status != GmailToolKitRunningStatus.PAUSED
-    ):
-        state.gmail_tool.start()
-        time.sleep(5)
+    gmail_tool = GmailToolKit(run_as_thread=False)
+    gmail_tool.start()
 
-        return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
-
-
-def pasue_gmail_toolkit(state: SequenceState):
-    """
-    Pause the Gmail toolkit if it is not already paused.
-    This Node checks the current status of the Gmail toolkit and pauses it if it is not paused.
-    """
-    if (
-        state.gmail_toolkit_status != GmailToolKitRunningStatus.PAUSED
-        and state.gmail_toolkit_status == GmailToolKitRunningStatus.RUNNING
-        and state.gmail_toolkit_status != GmailToolKitRunningStatus.STOPED
-    ):
-        state.gmail_tool.pause()
-
-    return {"gmail_toolkit_status": GmailToolKitRunningStatus.PAUSED}
-
-
-def resume_gmail_toolkit(state: SequenceState):
-    if (
-        state.gmail_toolkit_status != GmailToolKitRunningStatus.RUNNING
-        and state.gmail_toolkit_status == GmailToolKitRunningStatus.PAUSED
-        and state.gmail_toolkit_status != GmailToolKitRunningStatus.STOPED
-    ):
-        state.gmail_tool.resume()
-        time.sleep(5)
-
-        return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
-
-
-def stop_gmail_toolkit(state: SequenceState):
-    if (
-        state.gmail_toolkit_status != GmailToolKitRunningStatus.STOPED
-        and state.gmail_toolkit_status == GmailToolKitRunningStatus.RUNNING
-        and state.gmail_toolkit_status != GmailToolKitRunningStatus.PAUSED
-    ):
-        state.gmail_tool.stop()
-    return {"gmail_toolkit_status": GmailToolKitRunningStatus.STOPED}
-
-
-def restart_gmail_toolkit(state: SequenceState):
-    if (
-        state.gmail_toolkit_status == GmailToolKitRunningStatus.RUNNING
-        and state.gmail_toolkit_status != GmailToolKitRunningStatus.STOPED
-        and state.gmail_toolkit_status != GmailToolKitRunningStatus.PAUSED
-    ):
-        state.gmail_tool.restart()
-        time.sleep(5)
-
-    return {"gmail_toolkit_status": GmailToolKitRunningStatus.RUNNING}
-
-
-def read_emails_json(state: SequenceState):
-    """
-    Read emails from the email reader and update the state with the email data.
-    """
-    email_reader = JSONEmailReader()
-    emails: List[dict] = email_reader.get_all_email_content()
-
-    if not isinstance(emails, list) or not emails:
-        print("No emails found.")
-        # print(emails)
-        return
-
-    ## interrupt debug code
-    resp = interrupt(
-        {
-            "question": f"Found {len(emails)} emails. Do you want to process the first one? (y/n):"
-        }
-    )
-    if resp.lower() != "y":
-        print("Skipping email processing.")
-        return {
-            "email": emails[0],
-        }
-    else:
-        Command(goto=END)
+    time.sleep(5)
 
     return {
-        "email": emails[0],
-    }  # Return the first valid email data found
+        "email": gmail_tool.get_mails()[0],
+    }
 
 
 def analyze_importance(state: SequenceState):
@@ -218,7 +135,7 @@ def get_draft_edit_mode(state: SequenceState):
     # Simulate user selecting the draft edit mode
     edit_mode = interrupt(
         {
-            "question": "How do you want to edit the draft? (manual: 0/auto: 1/ skip response: 2):"
+            "question": "How do you want to edit the draft? (manual: 0/auto: 1/ no response: 2):"
         }
     )
     if edit_mode == 0:

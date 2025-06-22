@@ -1,11 +1,9 @@
-from typing import Literal
 from .states import SequenceState
 from langgraph.graph import END
-from langgraph.types import Command
 
 
 def check_read_email_router(state: SequenceState):
-    return "read_email_json_node" if not state.email else "pause_gmail_toolkit_node"
+    return "get_gmail_toolkit_node" if not state.email else "analyze_mail_importance_node"
 
 
 def email_importance_router(
@@ -14,7 +12,7 @@ def email_importance_router(
     return (
         "summarize_email_node"
         if state.is_mail_important
-        else "resume_gmail_toolkit_node"
+        else "get_gmail_toolkit_node"
     )
 
 
@@ -24,7 +22,7 @@ def is_response_needed_router(
     return (
         "mail_response_format_node"
         if state.is_response_needed
-        else "resume_gmail_toolkit_node"
+        else "get_gmail_toolkit_node"
     )
 
 
@@ -46,6 +44,6 @@ def get_draft_edit_mode_router(
     elif state.draft_manual_edit_mode == 1:
         return "auto_edit_response_node"
     elif state.draft_manual_edit_mode == 2:
-        return "resume_gmail_toolkit_node"
+        return "get_gmail_toolkit_node"
     else:
         return END
