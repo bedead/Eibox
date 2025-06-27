@@ -38,6 +38,18 @@ class GmailToolKit:
         max_results: int = 1,
         date=None,
     ):
+        """
+        Initializes the GmailToolKit with the provided parameters and sets up the Gmail API service.
+        Parameters:
+            run_as_thread: bool = False - If True, runs the email monitoring in a separate thread.
+            save_json: bool = True - If True, saves the fetched emails to a JSON file.
+            creds_file: FilePath = os.getenv("GCP_CREDS_FILE") - Path to the Google API credentials file.
+            token_file: FilePath = os.getenv("GCP_TOKEN_FILE") - Path to the token file for storing OAuth tokens.
+            json_file: FilePath = os.getenv("GMAIL_DATA_SAVE_FILE") - Path to the JSON file where emails will be saved.
+            interval: int = 5 - Time interval in seconds for checking new emails.
+            max_results: int = 1 - Maximum number of emails to fetch in each check.
+            date: Optional[str] = None - Date filter for fetching emails in (d, m, y) format.
+        """
         self.run_as_thread = run_as_thread
         self.save_json = save_json
         self.recent_emails: List = []

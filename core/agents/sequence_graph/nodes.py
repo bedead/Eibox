@@ -23,9 +23,7 @@ def get_gmail_toolkit(state: SequenceState):
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
-    working = interrupt({"question": "interrupt working :"})
-    print(f"Working status: {working}")
-    gmail_tool = GmailToolKit(run_as_thread=False)
+    gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
     gmail_tool.start()
 
     time.sleep(5)
