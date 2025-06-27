@@ -12,8 +12,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 app.debug = True
+
 
 # from langgraph.types import Interrupt
 
@@ -32,7 +32,7 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: int):
         # Stream the graph
         while True:
             async for chunk in graph.astream(
-                input=input, config=config, stream_mode="values"
+                input=input, config=config, stream_mode="updates"
             ):
                 for node_id, value in chunk.items():
                     if node_id == "__interrupt__":

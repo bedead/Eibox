@@ -29,7 +29,6 @@ GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT = dedent(
     detailed_reply (an elaborate reply with follow-up questions or information)
     forward (forward the email with a comment to another recipient)
     acknowledgement (confirm receipt of the email)
-    response_format: {style}  
     Only return the response text without any additional information or context.
     """
 )
@@ -41,7 +40,6 @@ EDIT_SUGGESTED_RESPONSE_PROMPT = dedent(
     detailed_reply (an elaborate reply with follow-up questions or information)
     forward (forward the email with a comment to another recipient)
     acknowledgement (confirm receipt of the email)
-    response_format: {style} 
     Only return the response text without any additional information or context.
     """
 )
