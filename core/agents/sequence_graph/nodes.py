@@ -1,8 +1,21 @@
 import time
+
+from core.utils.prompts import (
+    MAIL_SUMMARY_PROMPT,
+    IS_MAIL_IMPORTANT_PROMPT,
+    IS_RESPONSE_NEEDED_PROMPT,
+    MAIL_RESPONSE_FORMAT_PROMPT,
+    GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT,
+    EDIT_SUGGESTED_RESPONSE_PROMPT,
+)
 from .states import SequenceState
-from langgraph.types import interrupt, Command
-from langgraph.graph import END
+from langgraph.types import interrupt
 from core.gmail import GmailToolKit
+
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain.chat_models import init_chat_model
+
+llm_model = init_chat_model(model="gemini-1.5-flash", model_provider="google_genai")
 
 
 def get_gmail_toolkit(state: SequenceState):
@@ -10,6 +23,8 @@ def get_gmail_toolkit(state: SequenceState):
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
+    working = interrupt({"question": "interrupt working :"})
+    print(f"Working status: {working}")
     gmail_tool = GmailToolKit(run_as_thread=False)
     gmail_tool.start()
 
@@ -28,15 +43,16 @@ def analyze_importance(state: SequenceState):
         return
 
     email_data = state.email
-    # print(asyncio.iscoroutinefunction(state.ai_toolkit.analyze_importance))
-    important_response = state.ai_toolkit.analyze_importance(
-        email_data=email_data, json_output=True
-    )
-    decision1 = important_response.get("output", "").lower().strip()
-    print(f"Analyzed 1 mail importance: {decision1}")
+
+    messages = [
+        SystemMessage(content=IS_MAIL_IMPORTANT_PROMPT),
+        HumanMessage(content=f"{email_data}"),
+    ]
+    important_response = llm_model.invoke(messages).content.lower().strip()
+    print(f"Analyzed 1 mail importance: {important_response}")
 
     return {
-        "is_mail_important": decision1 == "yes",
+        "is_mail_important": important_response == "yes",
     }
 
 
@@ -48,12 +64,14 @@ def summarize_email(state: SequenceState):
         return
     if state.is_mail_important:
         email_data = state.email
-        summary = state.ai_toolkit.summarize_email(
-            email_data=email_data, json_output=True
-        )
+        messages = [
+            SystemMessage(content=MAIL_SUMMARY_PROMPT),
+            HumanMessage(content=f"{email_data}"),
+        ]
+        summary = llm_model.invoke(messages).content.lower().strip()
 
-        print(f"Summarized mail: {summary.get('output')}")
-        return {"email_summary": summary.get("output")}
+        print(f"Summarized mail: {summary}")
+        return {"email_summary": summary}
 
 
 def is_response_needed(state: SequenceState):
@@ -64,11 +82,13 @@ def is_response_needed(state: SequenceState):
         return
     if state.is_mail_important:
         email_data = state.email
-        response_needed = state.ai_toolkit.is_response_needed(
-            email_data=email_data, json_output=True
-        )
-        decision2 = response_needed.get("output", "").lower().strip()
-        return {"is_response_needed": decision2 == "yes"}
+        messages = [
+            SystemMessage(content=IS_RESPONSE_NEEDED_PROMPT),
+            HumanMessage(content=f"{email_data}"),
+        ]
+        response_needed = llm_model.invoke(messages).content.lower().strip()
+
+        return {"is_response_needed": response_needed == "yes"}
 
 
 def mail_response_format(state: SequenceState):
@@ -79,10 +99,11 @@ def mail_response_format(state: SequenceState):
         return
     if state.is_mail_important and state.is_response_needed:
         email_data = state.email
-        format_response = state.ai_toolkit.mail_response_format(
-            email_data=email_data, json_output=True
-        )
-        response_format = format_response.get("output", "").lower().strip()
+        messages = [
+            SystemMessage(content=MAIL_RESPONSE_FORMAT_PROMPT),
+            HumanMessage(content=f"{email_data}"),
+        ]
+        response_format = llm_model.invoke(messages).content.lower().strip()
         print(f"Chosen draft Response format: {response_format}")
         return {"response_format": response_format}
 
@@ -95,14 +116,14 @@ def generate_draft_response(state: SequenceState):
         return
     if state.is_mail_important and state.is_response_needed:
         email_data = state.email
-        response_suggestion = state.ai_toolkit.generate_response(
-            email_data=email_data,
-            json_output=True,
-            style=state.response_format,
-        )
-        response_text = response_suggestion.get("output")
+        messages = [
+            SystemMessage(content=GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT),
+            HumanMessage(content=f"{email_data}"),
+            HumanMessage(content=f"Mail style :{state.response_format}"),
+        ]
+        response_format = llm_model.invoke(messages).content.lower().strip()
 
-        return {"response_email_draft": response_text}
+        return {"response_email_draft": response_format}
 
 
 def get_response_approval(state: SequenceState):
@@ -176,14 +197,16 @@ def auto_edit_response(state: SequenceState):
             {"question": "Please provide customization instruction for the response:"}
         )
         email_data = state.email
-        edited_response = state.ai_toolkit.edit_response(
-            email_data=email_data,
-            draft_mail=state.response_email_draft,
-            additional_context=customization_instruction,
-            json_output=True,
-            style=state.response_format,
-        )
-        edited_response_text = edited_response.get("output")
+        messages = [
+            SystemMessage(content=EDIT_SUGGESTED_RESPONSE_PROMPT),
+            HumanMessage(content=f"Mail data :{email_data}"),
+            HumanMessage(content=f"Draft mail :{state.response_email_draft}"),
+            HumanMessage(
+                content=f"Customization instruction :{customization_instruction}"
+            ),
+            HumanMessage(content=f"Mail style :{state.response_format}"),
+        ]
+        edited_response_text = llm_model.invoke(messages).content.lower().strip()
         return {"response_edited": edited_response_text}
 
 

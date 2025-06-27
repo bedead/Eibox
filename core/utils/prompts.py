@@ -72,7 +72,7 @@ IS_MAIL_IMPORTANT_PROMPT = dedent(
 
 IS_RESPONSE_NEEDED_PROMPT = dedent(
     """
-    You are an email assistant. Given an email, determine if it requires a response. Reply with only "Yes" or "No" and nothing else.
+    You are an email assistant. Given an email, determine if it requires a response. Reply with only "yes" or "no" and nothing else.
     The email may contain the sender, subject, body, date, and other metadata in stringified json format.
     """
 )
