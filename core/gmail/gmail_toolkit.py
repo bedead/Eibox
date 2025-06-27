@@ -60,33 +60,87 @@ class GmailToolKit:
         Initially uses creds.json file to initiate OAuth2 flow.
         If token.pickle exists, it loads the credentials from there.
         If the token.pickle file does not exist, it creates a new one after successful authentication.
-        If the token.pickle file is invalid or expired, it refreshes them or prompts for re-authentication. ## yet to be implemented
+        If the token.pickle file is invalid or expired, it refreshes them or prompts for re-authentication.
         """
-        creds: Credentials = None
-        try:
-            if os.path.exists(self.token_file):
+        creds = None
+
+        # Load existing token if it exists
+        if os.path.exists(self.token_file):
+            try:
                 with open(self.token_file, "rb") as token:
-                    creds: Credentials = pickle.load(token)
-        except Exception as e:
-            self.logger.error(f"Error loading token file: {str(e)}")
+                    creds = pickle.load(token)
+                self.logger.debug("Token file loaded successfully.")
+            except (pickle.PickleError, EOFError, FileNotFoundError) as e:
+                self.logger.error(f"Error loading token file: {str(e)}")
+                # Remove corrupted token file
+                try:
+                    os.remove(self.token_file)
+                    self.logger.debug("Corrupted token file removed.")
+                except OSError:
+                    pass
+                creds = None
+            except Exception as e:
+                self.logger.error(f"Unexpected error loading token file: {str(e)}")
+                creds = None
+
+        # Check if credentials are valid
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                self.logger.debug("Refreshing expired token...")
-                creds.refresh(Request())
-                self.logger.debug("Token refreshed successfully.")
-            else:
-                flow: InstalledAppFlow = InstalledAppFlow.from_client_secrets_file(
-                    self.creds_file, SCOPES
-                )
-                creds: Credentials = self.get_available_port(flow=flow)
-                self.logger.debug("New token generated successfully.")
+                try:
+                    self.logger.debug("Refreshing expired token...")
+                    creds.refresh(Request())
+                    self.logger.debug("Token refreshed successfully.")
+                except Exception as e:
+                    self.logger.error(f"Error refreshing token: {str(e)}")
+                    self.logger.debug(
+                        "Failed to refresh token, initiating new OAuth flow..."
+                    )
+                    creds = None
 
-            with open(self.token_file, "wb") as token:
-                pickle.dump(creds, token)
+            # If no valid credentials, start OAuth flow
+            if not creds or not creds.valid:
+                try:
+                    if not os.path.exists(self.creds_file):
+                        raise FileNotFoundError(
+                            f"Credentials file not found: {self.creds_file}"
+                        )
+
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        self.creds_file, SCOPES
+                    )
+                    creds = self.get_available_port(flow=flow)
+                    self.logger.debug("New token generated successfully.")
+                except Exception as e:
+                    self.logger.error(f"Error during OAuth flow: {str(e)}")
+                    raise RuntimeError(
+                        f"Failed to authenticate with Gmail API: {str(e)}"
+                    )
+
+            # Save the credentials
+            try:
+                with open(self.token_file, "wb") as token:
+                    pickle.dump(creds, token)
                 self.logger.debug("Token saved to pickle file.")
+            except Exception as e:
+                self.logger.error(f"Error saving token file: {str(e)}")
+                # Continue execution even if saving fails
 
-        self.service = build("gmail", "v1", credentials=creds)
-        self.logger.debug("Authenticated successfully with Gmail API.")
+        # Build the service
+        try:
+            self.service = build("gmail", "v1", credentials=creds)
+            self.logger.debug("Authenticated successfully with Gmail API.")
+        except Exception as e:
+            self.logger.error(f"Error building Gmail service: {str(e)}")
+            raise RuntimeError(f"Failed to build Gmail service: {str(e)}")
+
+        # Verify the service works by making a test call
+        try:
+            # Test the connection with a simple API call
+            self.service.users().getProfile(userId="me").execute()
+            self.logger.debug("Gmail API connection verified.")
+        except Exception as e:
+            self.logger.error(f"Gmail API connection test failed: {str(e)}")
+            raise RuntimeError(f"Gmail API connection failed: {str(e)}")
 
     def get_available_port(
         self, flow: InstalledAppFlow, start_port=8080, max_attempts=2
