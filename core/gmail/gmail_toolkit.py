@@ -30,6 +30,7 @@ class GmailToolKit:
     def __init__(
         self,
         run_as_thread: bool = False,
+        save_json: bool = True,
         creds_file: FilePath = os.getenv("GCP_CREDS_FILE"),
         token_file: FilePath = os.getenv("GCP_TOKEN_FILE"),
         json_file: FilePath = os.getenv("GMAIL_DATA_SAVE_FILE"),
@@ -38,6 +39,7 @@ class GmailToolKit:
         date=None,
     ):
         self.run_as_thread = run_as_thread
+        self.save_json = save_json
         self.recent_emails: List = []
         self.max_results = max_results
         self.date = date
@@ -295,7 +297,7 @@ class GmailToolKit:
                 self.recent_emails: List = self.check_emails(
                     max_results=max_results, date=date
                 )
-                if self.recent_emails:
+                if self.recent_emails and self.save_json:
                     self.save_emails_to_json(self.recent_emails)
 
                 self.last_check_time = datetime.now()
@@ -327,7 +329,7 @@ class GmailToolKit:
                 self.recent_emails = self.check_emails(
                     max_results=self.max_results, date=self.date
                 )
-                if self.recent_emails:
+                if self.recent_emails and self.save_json:
                     self.save_emails_to_json(self.recent_emails)
                 self.last_check_time = datetime.now()
             except Exception as e:
@@ -367,6 +369,11 @@ class GmailToolKit:
         self.logger.debug("Restarted email monitoring.")
 
     def get_mails(self):
+        """Retrieve the most recent emails.
+        Returns:
+            List of recent emails.
+        If no emails are found, returns an empty list.
+        """
         return self.recent_emails
 
     def send_mail(self, to, subject, body) -> Dict[str, Any]:
@@ -401,14 +408,6 @@ class GmailToolKit:
 
 # Example usage
 if __name__ == "__main__":
-    tool = GmailToolKit()
+    tool = GmailToolKit(run_as_thread=False, max_results=5, save_json=False)
     tool.start()
-    # print(tool.check_emails())
-    time.sleep(10)
-    tool.pause()
-    time.sleep(5)
-    tool.resume()
-    time.sleep(5)
-    tool.restart()
-    time.sleep(10)
-    tool.stop()
+    print(tool.get_mails())
