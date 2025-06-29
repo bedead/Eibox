@@ -13,19 +13,19 @@ mainState = MainState()
 config = RunnableConfig(configurable={"thread_id": 1})
 
 
-user_input = "I need some expert guidance for building an AI agent. Could you request assistance for me?"
 config = {"configurable": {"thread_id": "1"}}
 
 
-def call_graph(user_input):
+def call_graph(user_input, config=config):
     events = main_graph.stream(
         {"messages": [{"role": "user", "content": user_input}]},
         config,
         stream_mode="updates",
+        debug=False,
     )
     for event in events:
-        if "messages" in event:
-            event["messages"][-1]
+        if event["llm_node"]["messages"]:
+            print(event["llm_node"]["messages"].content)
 
 
 while True:
