@@ -1,4 +1,6 @@
-from core.agents.sequence_graph.graph import graph
-from core.agents.sequence_graph.states import SequenceState
+from core.agents.sequence_graph import sequence_graph
+from core.agents.main_graph import main_graph
+from core.agents.sequence_graph import SequenceState
+from core.agents.main_graph import MainState
 
-__all__ = ["graph", "SequenceState"]
+__all__ = ["sequence_graph", "main_graph", "SequenceState", "MainState"]

@@ -1,35 +1,36 @@
-from langgraph.types import Command
-from core import graph
-from core.agents.sequence_graph.states import SequenceState
+# from langgraph.types import Command
+from core import main_graph, MainState
 from core.utils.utils import display_graph
 from langgraph.config import RunnableConfig
 
 # display_graph(
-#     graph,
+#     main_graph,
 #     use_mermaid=True,
 #     use_api=True,
 # )
-inputState = SequenceState()
+
+mainState = MainState()
 config = RunnableConfig(configurable={"thread_id": 1})
-# result = graph.invoke(
-#     input=input, config=RunnableConfig(configurable={"thread_id": 1}), debug=True
-# )
-# print(result)
 
 
-for chunk in graph.stream(
-    input=inputState,
-    config=config,
-    #   stream_mode="values"
-):
-    for id, value in chunk.items():
-        if id == "__interrupt__":
-            # print(value)
-            # Send the received data to the other user
-            question = value[0].value["question"]
-            response = input(f"{question}")
-            # resume_map = {
-            #     i.interrupt_id: f"{response}"
-            #     for i in graph.get_state(config=config).interrupts
-            # }
-            graph.invoke(Command(resume=response), config=config)
+user_input = "I need some expert guidance for building an AI agent. Could you request assistance for me?"
+config = {"configurable": {"thread_id": "1"}}
+
+
+def call_graph(user_input):
+    events = main_graph.stream(
+        {"messages": [{"role": "user", "content": user_input}]},
+        config,
+        stream_mode="updates",
+    )
+    for event in events:
+        if "messages" in event:
+            event["messages"][-1]
+
+
+while True:
+    user_input = input("You :")
+    if user_input in ["quit", "exit"]:
+        break
+    else:
+        call_graph(user_input=user_input)
