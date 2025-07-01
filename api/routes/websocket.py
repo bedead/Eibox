@@ -6,7 +6,7 @@ from core import sequence_graph, SequenceState, main_graph
 router = APIRouter()
 
 
-@router.websocket("/ws/{thread_id}")
+@router.websocket("/second/v1/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, thread_id: int):
     await websocket.accept()
     try:
@@ -45,13 +45,14 @@ def call_graph(user_input, config: RunnableConfig):
     events = main_graph.stream(
         {"messages": [{"role": "user", "content": user_input}]},
         config,
+        stream_mode="values",
     )
     for event in events:
         if event["llm_node"]["messages"]:
             return event["llm_node"]["messages"].content
 
 
-@router.websocket("/ws-chatbot/{thread_id}")
+@router.websocket("/chatbot/v1/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, thread_id: str):
     await websocket.accept()
     try:

@@ -3,7 +3,7 @@ from fastapi import APIRouter, WebSocket
 router = APIRouter()
 
 
-@router.websocket("/ws-chatbot/{thread_id}")
+@router.websocket("/dummy-chatbot/v1/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, thread_id: str):
     await websocket.accept()
     try:
