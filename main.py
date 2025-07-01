@@ -1,5 +1,4 @@
-# from langgraph.types import Command
-from core import main_graph, MainState
+from core.agents.main_graph.graph import graph
 from core.utils.utils import display_graph
 from langgraph.config import RunnableConfig
 
@@ -9,28 +8,25 @@ from langgraph.config import RunnableConfig
 #     use_api=True,
 # )
 
-mainState = MainState()
+# mainState = MainState()
 config = RunnableConfig(configurable={"thread_id": 1})
 
 
-config = {"configurable": {"thread_id": "1"}}
-
-
-def call_graph(user_input, config=config):
-    events = main_graph.stream(
-        {"messages": [{"role": "user", "content": user_input}]},
-        config,
-        stream_mode="updates",
-        debug=False,
-    )
-    for event in events:
-        if event["llm_node"]["messages"]:
-            print(event["llm_node"]["messages"].content)
-
-
 while True:
-    user_input = input("You :")
-    if user_input in ["quit", "exit"]:
+    user_i = input("You : ")
+    if user_i in ["exit", "close"]:
         break
-    else:
-        call_graph(user_input=user_input)
+    chunk = graph.stream(
+        input={"messages": {"role": "user", "content": user_i}},
+        config=config,
+        stream_mode="values",
+    )
+    for event in chunk:
+        if "messages" in event:
+            event['messages'][-1].pretty_print()
+        # print(node_id)
+        # not usefull as for now
+        # if node_id == "__interrupt__":
+        #     # question = value[0].value.get("question", "Human input required")
+        #     command = Command(resume={"data": input("You : ")})
+        #     resumed_output = graph.stream(command, config=config)

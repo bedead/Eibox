@@ -1,12 +1,12 @@
 from typing import TypedDict, Annotated
-from pydantic import Field
 from langgraph.graph.message import add_messages
 
 
 class MainState(TypedDict):
     """
-    A class to represent the state of a main agent in a graph.
+    Represents the state of a main agent in a graph message history.
     """
 
-    # Attributes
     messages: Annotated[list, add_messages]  # Tracking workflow message history
+    current_model_name: str
+    current_model_provider: str
