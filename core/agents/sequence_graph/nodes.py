@@ -9,31 +9,29 @@ from core.utils.prompts import (
     EDIT_SUGGESTED_RESPONSE_PROMPT,
 )
 from ..shared_state import SharedState
-from langgraph.types import interrupt
+from langgraph.types import interrupt, Command
 from core.gmail import GmailToolKit
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
 
 llm_model = init_chat_model(model="gemini-1.5-flash", model_provider="google_genai")
+gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
 
 
-def get_gmail_toolkit(state: SharedState):
+def get_gmail_toolkit(state: SharedState) -> Command:
     """
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
-    gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
     gmail_tool.start()
 
     time.sleep(5)
 
-    return {
-        "email": gmail_tool.get_mails()[0],
-    }
+    return Command(update={"email": gmail_tool.get_mails()[0]})
 
 
-def analyze_importance(state: SharedState):
+def analyze_importance(state: SharedState) -> Command:
     """
     Analyze the importance of the email using the AI toolkit.
     """
@@ -49,9 +47,7 @@ def analyze_importance(state: SharedState):
     important_response = llm_model.invoke(messages).content.lower().strip()
     print(f"Analyzed 1 mail importance: {important_response}")
 
-    return {
-        "is_mail_important": important_response == "yes",
-    }
+    return Command(update={"is_mail_important": important_response == "yes"})
 
 
 def summarize_email(state: SharedState):
@@ -226,9 +222,9 @@ def send_email_response(state: SharedState):
             if state.response_edited
             else state.response_email_draft
         )
-        status = state.gmail_tool.send_mail(
+        status = gmail_tool.send_mail(
             to=email_data["sender"],
             subject=email_data["subject"],
             body=response_text,
         )
-        return {"response_sent": status["status"]}
+        return {"response_sent": status["success"]}
