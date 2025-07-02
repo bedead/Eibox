@@ -5,11 +5,13 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
 from langchain.chat_models import init_chat_model
-from .states import MainState
+from ..shared_state import SharedState
 from langgraph.types import Command
 
-graph_builder = StateGraph(MainState)
+graph_builder = StateGraph(SharedState)
 available_models = {
+    "qwen2.5:0.5b": {"model_name": "qwen2.5:0.5b", "provider": "ollama"},
+    "gemma3:1b": {"model_name": "gemma3:1b", "provider": "ollama"},
     "gemini-1.5-flash": {
         "model_name": "gemini-1.5-flash",
         "provider": "google_genai",
@@ -101,7 +103,7 @@ tools = [show_available_models, switch_current_model, get_current_model]
 llm_with_tools = llm.bind_tools(tools)
 
 
-def chatbot(state: MainState):
+def chatbot(state: SharedState):
     message = llm_with_tools.invoke(
         state["messages"],
         config={
@@ -118,10 +120,10 @@ def chatbot(state: MainState):
     return {"messages": [message]}
 
 
-def set_initial_model(state: MainState):
+def set_initial_model(state: SharedState):
     return {
-        "current_model_name": "gemini-2.0-flash",
-        "current_model_provider": "google_genai",
+        "current_model_name": available_models["qwen2.5:0.5b"]["model_name"],
+        "current_model_provider": available_models["qwen2.5:0.5b"]["provider"],
     }
 
 
