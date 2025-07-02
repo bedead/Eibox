@@ -11,7 +11,6 @@ from langgraph.types import Command
 graph_builder = StateGraph(SharedState)
 available_models = {
     "qwen2.5:0.5b": {"model_name": "qwen2.5:0.5b", "provider": "ollama"},
-    "gemma3:1b": {"model_name": "gemma3:1b", "provider": "ollama"},
     "gemini-1.5-flash": {
         "model_name": "gemini-1.5-flash",
         "provider": "google_genai",
