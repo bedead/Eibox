@@ -1,5 +1,4 @@
-from core.agents.sequence_graph import sequence_graph
-from core.agents.sequence_graph import SequenceState
-from core.agents.main_graph import MainState
+from core.agents.email_agent import EmailState, EmailAgent
+from core.agents.chatbot_agent import ChatbotState, ChatAgent
 
-__all__ = ["sequence_graph", "SequenceState", "MainState"]
+__all__ = ["EmailState", "EmailAgent", "ChatbotState", "ChatAgent"]

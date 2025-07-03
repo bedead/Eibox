@@ -2,7 +2,7 @@ from typing import TypedDict, Annotated
 from langgraph.graph.message import add_messages
 
 
-class MainState(TypedDict):
+class ChatbotState(TypedDict):
     """
     Represents the state of a main agent in a graph message history.
     """

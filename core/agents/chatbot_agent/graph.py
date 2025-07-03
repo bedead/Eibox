@@ -6,10 +6,10 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
 from langchain.chat_models import init_chat_model
-from .states import MainState
+from .states import ChatbotState
 from langgraph.types import Command
 
-graph_builder = StateGraph(MainState)
+graph_builder = StateGraph(ChatbotState)
 available_models = {
     "qwen2.5:0.5b": {"model_name": "qwen2.5:0.5b", "provider": "ollama"},
     "gemini-1.5-flash": {
@@ -103,7 +103,7 @@ tools = [show_available_models, switch_current_model, get_current_model]
 llm_with_tools = llm.bind_tools(tools)
 
 
-def chatbot(state: MainState) -> Command:
+def chatbot(state: ChatbotState) -> Command:
     message = llm_with_tools.invoke(
         input=state["messages"],
         config={
@@ -118,7 +118,7 @@ def chatbot(state: MainState) -> Command:
     return Command(update={"messages": [message]})
 
 
-def set_initial_model(state: MainState):
+def set_initial_model(state: ChatbotState):
     return {
         "current_model_name": available_models["qwen2.5:0.5b"]["model_name"],
         "current_model_provider": available_models["qwen2.5:0.5b"]["provider"],
@@ -140,4 +140,4 @@ graph_builder.add_conditional_edges(
 )
 graph_builder.add_edge("tools", "chatbot")
 
-graph = graph_builder.compile(checkpointer=MemorySaver())
+graph = graph_builder.compile()

@@ -22,13 +22,13 @@ from .routes import (
     email_importance_router,
     is_response_needed_router,
 )
-from .states import SequenceState
+from .states import EmailState
 
 
 def create_sequence_graph() -> StateGraph:
     # Create the State Graph
     sequence_graph = StateGraph(
-        state_schema=SequenceState,
+        state_schema=EmailState,
     )
 
     # Add nodes to the graph
@@ -53,23 +53,23 @@ def create_sequence_graph() -> StateGraph:
         node="generate_draft_response_node",
         action=generate_draft_response,
     )
-    sequence_graph.add_node(
-        node="get_response_approval_node",
-        action=get_response_approval,
-    )
-    sequence_graph.add_node(node="get_draft_edit_mode_node", action=get_draft_edit_mode)
-    sequence_graph.add_node(
-        node="get_edited_response_node",
-        action=get_edited_response,
-    )
-    sequence_graph.add_node(
-        node="auto_edit_response_node",
-        action=auto_edit_response,
-    )
-    sequence_graph.add_node(
-        node="send_email_response_node",
-        action=send_email_response,
-    )
+    # sequence_graph.add_node(
+    #     node="get_response_approval_node",
+    #     action=get_response_approval,
+    # )
+    # sequence_graph.add_node(node="get_draft_edit_mode_node", action=get_draft_edit_mode)
+    # sequence_graph.add_node(
+    #     node="get_edited_response_node",
+    #     action=get_edited_response,
+    # )
+    # sequence_graph.add_node(
+    #     node="auto_edit_response_node",
+    #     action=auto_edit_response,
+    # )
+    # sequence_graph.add_node(
+    #     node="send_email_response_node",
+    #     action=send_email_response,
+    # )
 
     # Add edges to the graph
     sequence_graph.add_edge(START, "get_gmail_toolkit_node")
@@ -100,35 +100,35 @@ def create_sequence_graph() -> StateGraph:
     )
 
     sequence_graph.add_edge("mail_response_format_node", "generate_draft_response_node")
-    sequence_graph.add_edge(
-        "generate_draft_response_node", "get_response_approval_node"
-    )
-    sequence_graph.add_conditional_edges(
-        source="get_response_approval_node",
-        path=get_response_approval_router,
-        path_map={
-            "send_email_response_node": "send_email_response_node",
-            "get_draft_edit_mode_node": "get_draft_edit_mode_node",
-        },
-    )
-    sequence_graph.add_conditional_edges(
-        source="get_draft_edit_mode_node",
-        path=get_draft_edit_mode_router,
-        path_map={
-            "get_edited_response_node": "get_edited_response_node",
-            "auto_edit_response_node": "auto_edit_response_node",
-            "get_gmail_toolkit_node": "get_gmail_toolkit_node",
-        },
-    )
-    sequence_graph.add_edge("auto_edit_response_node", "get_response_approval_node")
-    sequence_graph.add_edge("get_edited_response_node", "get_response_approval_node")
+    # sequence_graph.add_edge(
+    #     "generate_draft_response_node", "get_response_approval_node"
+    # )
+    # sequence_graph.add_conditional_edges(
+    #     source="get_response_approval_node",
+    #     path=get_response_approval_router,
+    #     path_map={
+    #         "send_email_response_node": "send_email_response_node",
+    #         "get_draft_edit_mode_node": "get_draft_edit_mode_node",
+    #     },
+    # )
+    # sequence_graph.add_conditional_edges(
+    #     source="get_draft_edit_mode_node",
+    #     path=get_draft_edit_mode_router,
+    #     path_map={
+    #         "get_edited_response_node": "get_edited_response_node",
+    #         "auto_edit_response_node": "auto_edit_response_node",
+    #         "get_gmail_toolkit_node": "get_gmail_toolkit_node",
+    #     },
+    # )
+    # sequence_graph.add_edge("auto_edit_response_node", "get_response_approval_node")
+    # sequence_graph.add_edge("get_edited_response_node", "get_response_approval_node")
 
-    sequence_graph.add_edge("send_email_response_node", END)
+    sequence_graph.add_edge("generate_draft_response_node", END)
 
     return sequence_graph
 
 
 # conn = sqlite3.connect("checkpoints.sqlite")
 # checkpointer = SqliteSaver(conn)
-graph = create_sequence_graph().compile(checkpointer=InMemorySaver(), debug=True)
+graph = create_sequence_graph().compile()
 # print(graph.get_graph().draw_mermaid())

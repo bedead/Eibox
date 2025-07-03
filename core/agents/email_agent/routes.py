@@ -1,8 +1,8 @@
-from .states import SequenceState
+from .states import EmailState
 from langgraph.graph import END
 
 
-def check_read_email_router(state: SequenceState):
+def check_read_email_router(state: EmailState):
     return (
         "get_gmail_toolkit_node"
         if not state["email"]
@@ -11,7 +11,7 @@ def check_read_email_router(state: SequenceState):
 
 
 def email_importance_router(
-    state: SequenceState,
+    state: EmailState,
 ):
     return (
         "summarize_email_node"
@@ -21,7 +21,7 @@ def email_importance_router(
 
 
 def is_response_needed_router(
-    state: SequenceState,
+    state: EmailState,
 ):
     return (
         "mail_response_format_node"
@@ -31,7 +31,7 @@ def is_response_needed_router(
 
 
 def get_response_approval_router(
-    state: SequenceState,
+    state: EmailState,
 ):
     return (
         "send_email_response_node"
@@ -41,7 +41,7 @@ def get_response_approval_router(
 
 
 def get_draft_edit_mode_router(
-    state: SequenceState,
+    state: EmailState,
 ):
     if state["draft_manual_edit_mode"] == 0:
         return "get_edited_response_node"

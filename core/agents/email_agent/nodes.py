@@ -8,7 +8,8 @@ from core.utils.prompts import (
     GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT,
     EDIT_SUGGESTED_RESPONSE_PROMPT,
 )
-from .states import SequenceState
+from .states import EmailState
+from langgraph.graph import END
 from langgraph.types import interrupt, Command
 from core.gmail import GmailToolKit
 
@@ -19,29 +20,30 @@ llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
 # gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
 
 
-def get_gmail_toolkit(state: SequenceState) -> Command:
+def get_gmail_toolkit(state: EmailState) -> Command:
     """
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
-    # gmail_tool.start()
+    if not state["pending_email"]:
+        # gmail_tool.start()
 
-    time.sleep(5)
-    gmail = {
-        "id": "17f3a12b2e6c9a5e",
-        "subject": "URGENT: Immediate Action Required on Your Internship Application",
-        "sender": "hr@companycareers.com",
-        "date": "2025-07-03T09:15:00Z",
-        "body": "Dear Satyam,\n\nWe reviewed your internship application and require additional documents to process your candidacy. Please upload your updated resume and project portfolio by 6 PM IST today. Without these, your application will not be considered further.\n\nIf you've already submitted them, kindly ignore this message.\n\nRegards,\nHR Team\nCompanyCareers",
-        "unread": True,
-        "snippet": "We reviewed your internship application and require additional documents to process...",
-    }
+        time.sleep(5)
+        gmail = {
+            "id": "17f3a12b2e6c9a5e",
+            "subject": "URGENT: Immediate Action Required on Your Internship Application",
+            "sender": "hr@companycareers.com",
+            "date": "2025-07-03T09:15:00Z",
+            "body": "Dear Satyam,\n\nWe reviewed your internship application and require additional documents to process your candidacy. Please upload your updated resume and project portfolio by 6 PM IST today. Without these, your application will not be considered further.\n\nIf you've already submitted them, kindly ignore this message.\n\nRegards,\nHR Team\nCompanyCareers",
+            "unread": True,
+            "snippet": "We reviewed your internship application and require additional documents to process...",
+        }
 
-    # return Command(update={"email": gmail_tool.get_mails()[0]})
-    return Command(update={"email": gmail})
+        # return Command(update={"email": gmail_tool.get_mails()[0]})
+        return Command(update={"email": gmail})
 
 
-def analyze_importance(state: SequenceState) -> Command:
+def analyze_importance(state: EmailState) -> Command:
     """
     Analyze the importance of the email using the AI toolkit.
     """
@@ -55,12 +57,11 @@ def analyze_importance(state: SequenceState) -> Command:
         HumanMessage(content=f"{email_data}"),
     ]
     important_response = llm_model.invoke(messages).content.lower().strip()
-    print(f"Analyzed 1 mail importance: {important_response}")
 
     return Command(update={"is_mail_important": important_response == "yes"})
 
 
-def summarize_email(state: SequenceState):
+def summarize_email(state: EmailState):
     """
     Summarize the email using the AI toolkit.
     """
@@ -74,11 +75,10 @@ def summarize_email(state: SequenceState):
         ]
         summary = llm_model.invoke(messages).content.lower().strip()
 
-        print(f"Summarized mail: {summary}")
         return {"email_summary": summary}
 
 
-def is_response_needed(state: SequenceState):
+def is_response_needed(state: EmailState):
     """
     Check if a response is needed for the email using the AI toolkit.
     """
@@ -95,7 +95,7 @@ def is_response_needed(state: SequenceState):
         return {"is_response_needed": response_needed == "yes"}
 
 
-def mail_response_format(state: SequenceState):
+def mail_response_format(state: EmailState):
     """
     Get the response format for the email using the AI toolkit.
     """
@@ -108,11 +108,10 @@ def mail_response_format(state: SequenceState):
             HumanMessage(content=f"{email_data}"),
         ]
         response_format = llm_model.invoke(messages).content.lower().strip()
-        print(f"Chosen draft Response format: {response_format}")
         return {"response_format": response_format}
 
 
-def generate_draft_response(state: SequenceState):
+def generate_draft_response(state: EmailState):
     """
     Generate a draft response for the email using the AI toolkit.
     """
@@ -130,7 +129,7 @@ def generate_draft_response(state: SequenceState):
         return {"response_email_draft": response_format}
 
 
-def get_response_approval(state: SequenceState):
+def get_response_approval(state: EmailState):
     """
     Get the response approval from the user.
     """
@@ -150,7 +149,7 @@ def get_response_approval(state: SequenceState):
     return {"response_approved": user_approval}
 
 
-def get_draft_edit_mode(state: SequenceState):
+def get_draft_edit_mode(state: EmailState):
     """
     Get the draft edit mode from the user.
     This is a function which lets users choose the edit mode of draft (manual/auto).
@@ -172,7 +171,7 @@ def get_draft_edit_mode(state: SequenceState):
         return
 
 
-def get_edited_response(state: SequenceState):
+def get_edited_response(state: EmailState):
     """
     Get the edited response from the user.
     """
@@ -183,7 +182,7 @@ def get_edited_response(state: SequenceState):
     return
 
 
-def auto_edit_response(state: SequenceState):
+def auto_edit_response(state: EmailState):
     """
     Auto edit the response for the email using the AI toolkit (LLM) by giving customization instruction.
     """
@@ -212,7 +211,7 @@ def auto_edit_response(state: SequenceState):
         return {"response_edited": edited_response_text}
 
 
-def send_email_response(state: SequenceState):
+def send_email_response(state: EmailState):
     """
     Send the response for the email using the Gmail toolkit.
     """
