@@ -1,6 +1,7 @@
+from textwrap import dedent
 from typing_extensions import Annotated
 from langchain_core.tools import tool, InjectedToolCallId
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
@@ -102,9 +103,19 @@ tools = [show_available_models, switch_current_model, get_current_model]
 llm_with_tools = llm.bind_tools(tools)
 
 
-def chatbot(state: SharedState):
+def chatbot(state: SharedState) -> Command:
+    if state["is_mail_important"]:
+        sys_msg = SystemMessage(
+            content=f"You are a autonomous mailing assistant.\nUser has just recieved a important mail with data: {state['email']}"
+        )
+    if state["is_response_needed"] and state["response_email_draft"]:
+        sys_msg.content.append(
+            f"This mail seems important.\nHere's a draft response : {state['response_email_draft']}"
+        )
+    user_msg = HumanMessage(content=state["messages"])
+    msgs = [sys_msg, user_msg]
     message = llm_with_tools.invoke(
-        state["messages"],
+        input=msgs,
         config={
             "configurable": {
                 "model": state["current_model_name"],
@@ -112,11 +123,9 @@ def chatbot(state: SharedState):
             }
         },
     )
-    # Because we will be interrupting during tool execution,
-    # we disable parallel tool calling to avoid repeating any
-    # tool invocations when we resume.
-    assert len(message.tool_calls) <= 1
-    return {"messages": [message]}
+
+    # assert len(message.tool_calls) <= 1
+    return Command(update={"messages": [message]})
 
 
 def set_initial_model(state: SharedState):
@@ -127,12 +136,16 @@ def set_initial_model(state: SharedState):
 
 
 graph_builder.add_node("set_model", set_initial_model)
+from ..sequence_graph.graph import graph as bg_graph
+
+graph_builder.add_node("bg_graph", bg_graph)
 graph_builder.add_node("chatbot", chatbot)
 
 tool_node = ToolNode(tools=tools)
 graph_builder.add_node("tools", tool_node)
 
 graph_builder.add_edge(START, "set_model")
+graph_builder.add_edge(START, "bg_graph")
 graph_builder.add_edge("set_model", "chatbot")
 graph_builder.add_conditional_edges(
     "chatbot",
@@ -140,4 +153,4 @@ graph_builder.add_conditional_edges(
 )
 graph_builder.add_edge("tools", "chatbot")
 
-graph = graph_builder.compile(checkpointer=MemorySaver(), debug=True)
+graph = graph_builder.compile(checkpointer=MemorySaver())
