@@ -8,7 +8,7 @@ from core.utils.prompts import (
     GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT,
     EDIT_SUGGESTED_RESPONSE_PROMPT,
 )
-from ..shared_state import SharedState
+from .states import SequenceState
 from langgraph.types import interrupt, Command
 from core.gmail import GmailToolKit
 
@@ -19,7 +19,7 @@ llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
 # gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
 
 
-def get_gmail_toolkit(state: SharedState) -> Command:
+def get_gmail_toolkit(state: SequenceState) -> Command:
     """
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
@@ -41,7 +41,7 @@ def get_gmail_toolkit(state: SharedState) -> Command:
     return Command(update={"email": gmail})
 
 
-def analyze_importance(state: SharedState) -> Command:
+def analyze_importance(state: SequenceState) -> Command:
     """
     Analyze the importance of the email using the AI toolkit.
     """
@@ -60,7 +60,7 @@ def analyze_importance(state: SharedState) -> Command:
     return Command(update={"is_mail_important": important_response == "yes"})
 
 
-def summarize_email(state: SharedState):
+def summarize_email(state: SequenceState):
     """
     Summarize the email using the AI toolkit.
     """
@@ -78,7 +78,7 @@ def summarize_email(state: SharedState):
         return {"email_summary": summary}
 
 
-def is_response_needed(state: SharedState):
+def is_response_needed(state: SequenceState):
     """
     Check if a response is needed for the email using the AI toolkit.
     """
@@ -95,7 +95,7 @@ def is_response_needed(state: SharedState):
         return {"is_response_needed": response_needed == "yes"}
 
 
-def mail_response_format(state: SharedState):
+def mail_response_format(state: SequenceState):
     """
     Get the response format for the email using the AI toolkit.
     """
@@ -112,7 +112,7 @@ def mail_response_format(state: SharedState):
         return {"response_format": response_format}
 
 
-def generate_draft_response(state: SharedState):
+def generate_draft_response(state: SequenceState):
     """
     Generate a draft response for the email using the AI toolkit.
     """
@@ -130,7 +130,7 @@ def generate_draft_response(state: SharedState):
         return {"response_email_draft": response_format}
 
 
-def get_response_approval(state: SharedState):
+def get_response_approval(state: SequenceState):
     """
     Get the response approval from the user.
     """
@@ -150,7 +150,7 @@ def get_response_approval(state: SharedState):
     return {"response_approved": user_approval}
 
 
-def get_draft_edit_mode(state: SharedState):
+def get_draft_edit_mode(state: SequenceState):
     """
     Get the draft edit mode from the user.
     This is a function which lets users choose the edit mode of draft (manual/auto).
@@ -172,7 +172,7 @@ def get_draft_edit_mode(state: SharedState):
         return
 
 
-def get_edited_response(state: SharedState):
+def get_edited_response(state: SequenceState):
     """
     Get the edited response from the user.
     """
@@ -183,7 +183,7 @@ def get_edited_response(state: SharedState):
     return
 
 
-def auto_edit_response(state: SharedState):
+def auto_edit_response(state: SequenceState):
     """
     Auto edit the response for the email using the AI toolkit (LLM) by giving customization instruction.
     """
@@ -212,7 +212,7 @@ def auto_edit_response(state: SharedState):
         return {"response_edited": edited_response_text}
 
 
-def send_email_response(state: SharedState):
+def send_email_response(state: SequenceState):
     """
     Send the response for the email using the Gmail toolkit.
     """

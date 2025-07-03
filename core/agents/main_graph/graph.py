@@ -6,10 +6,10 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
 from langchain.chat_models import init_chat_model
-from ..shared_state import SharedState
+from .states import MainState
 from langgraph.types import Command
 
-graph_builder = StateGraph(SharedState)
+graph_builder = StateGraph(MainState)
 available_models = {
     "qwen2.5:0.5b": {"model_name": "qwen2.5:0.5b", "provider": "ollama"},
     "gemini-1.5-flash": {
@@ -103,19 +103,9 @@ tools = [show_available_models, switch_current_model, get_current_model]
 llm_with_tools = llm.bind_tools(tools)
 
 
-def chatbot(state: SharedState) -> Command:
-    if state["is_mail_important"]:
-        sys_msg = SystemMessage(
-            content=f"You are a autonomous mailing assistant.\nUser has just recieved a important mail with data: {state['email']}"
-        )
-    if state["is_response_needed"] and state["response_email_draft"]:
-        sys_msg.content.append(
-            f"This mail seems important.\nHere's a draft response : {state['response_email_draft']}"
-        )
-    user_msg = HumanMessage(content=state["messages"])
-    msgs = [sys_msg, user_msg]
+def chatbot(state: MainState) -> Command:
     message = llm_with_tools.invoke(
-        input=msgs,
+        input=state["messages"],
         config={
             "configurable": {
                 "model": state["current_model_name"],
@@ -128,7 +118,7 @@ def chatbot(state: SharedState) -> Command:
     return Command(update={"messages": [message]})
 
 
-def set_initial_model(state: SharedState):
+def set_initial_model(state: MainState):
     return {
         "current_model_name": available_models["qwen2.5:0.5b"]["model_name"],
         "current_model_provider": available_models["qwen2.5:0.5b"]["provider"],
@@ -136,16 +126,13 @@ def set_initial_model(state: SharedState):
 
 
 graph_builder.add_node("set_model", set_initial_model)
-from ..sequence_graph.graph import graph as bg_graph
 
-graph_builder.add_node("bg_graph", bg_graph)
 graph_builder.add_node("chatbot", chatbot)
 
 tool_node = ToolNode(tools=tools)
 graph_builder.add_node("tools", tool_node)
 
 graph_builder.add_edge(START, "set_model")
-graph_builder.add_edge(START, "bg_graph")
 graph_builder.add_edge("set_model", "chatbot")
 graph_builder.add_conditional_edges(
     "chatbot",

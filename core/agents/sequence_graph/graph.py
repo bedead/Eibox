@@ -22,13 +22,13 @@ from .routes import (
     email_importance_router,
     is_response_needed_router,
 )
-from ..shared_state import SharedState
+from .states import SequenceState
 
 
 def create_sequence_graph() -> StateGraph:
     # Create the State Graph
     sequence_graph = StateGraph(
-        state_schema=SharedState,
+        state_schema=SequenceState,
     )
 
     # Add nodes to the graph

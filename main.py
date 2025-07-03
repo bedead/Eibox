@@ -1,4 +1,7 @@
 from core.agents.main_graph.graph import graph
+# from core.agents.sequence_graph.graph import graph
+from core.agents.sequence_graph.states import SequenceState
+
 from core.agents.shared_state import SharedState
 from langgraph.types import Command
 from core.utils.utils import display_graph
@@ -20,13 +23,15 @@ while True:
     if user_i in ["exit", "close"]:
         break
     chunk = graph.stream(
-        input={"messages": {"role": "user", "content": user_i}},
+        # input={"messages": {"role": "user", "content": user_i}},
+        input=SequenceState(),
         config=config,
         stream_mode="values",
     )
     for event in chunk:
         if "messages" in event:
-            event['messages'][-1].pretty_print()
+            event["messages"][-1].pretty_print()
+            pass
         # print(node_id)
         # not usefull as for now
         # if node_id == "__interrupt__":
