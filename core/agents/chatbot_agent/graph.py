@@ -6,11 +6,11 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
 from langchain.chat_models import init_chat_model
-from .states import ChatbotState
+from core.agents.chatbot_agent.states import ChatbotState
 from langgraph.types import Command
 
 graph_builder = StateGraph(ChatbotState)
-available_models = {
+available_models: dict = {
     "qwen2.5:0.5b": {"model_name": "qwen2.5:0.5b", "provider": "ollama"},
     "gemini-1.5-flash": {
         "model_name": "gemini-1.5-flash",
@@ -54,9 +54,9 @@ available_models = {
 @tool
 def show_available_models(
     tool_call_id: Annotated[str, InjectedToolCallId],
-) -> str:
+) -> ToolMessage:
     """Returns all the llm models currently available to use after switching."""
-    return ToolMessage(content=available_models, tool_call_id=tool_call_id)
+    return ToolMessage(content=[available_models], tool_call_id=tool_call_id)
 
 
 @tool

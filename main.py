@@ -6,7 +6,6 @@ from core.agents.email_agent.states import EmailState
 
 from langgraph.types import Command
 from core.utils.utils import display_graph
-from langgraph.config import RunnableConfig
 import asyncio
 
 # print(graph.get_graph().draw_mermaid())
@@ -20,7 +19,7 @@ import asyncio
 
 # mainState = MainState()
 async def main():
-    from langgraph.config import RunnableConfig
+    from langchain_core.runnables import RunnableConfig
 
     config = RunnableConfig(configurable={"thread_id": 1})
 

@@ -8,7 +8,7 @@ from core.utils.prompts import (
     GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT,
     EDIT_SUGGESTED_RESPONSE_PROMPT,
 )
-from .states import EmailState
+from core.agents.email_agent.states import EmailState
 from langgraph.graph import END
 from langgraph.types import interrupt, Command
 from core.gmail import GmailToolKit

@@ -1,0 +1,11 @@
+{
+    "python_version": "3.11",
+    "dependencies": [
+        "."
+    ],
+    "graphs": {
+        "chatbot": "./core/agents/chatbot_agent/graph.py:graph",
+        "email_cron": "./core/agents/email_agent/graph.py:graph"
+    },
+    "env": "./.env"
+}

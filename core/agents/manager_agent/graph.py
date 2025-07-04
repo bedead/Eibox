@@ -1,7 +1,7 @@
 import asyncio
-from .states import ManagerState
-from ..chatbot_agent import ChatbotState, ChatAgent
-from ..email_agent import EmailState, EmailAgent
+from core.agents.manager_agent.states import ManagerState
+from core.agents.chatbot_agent import ChatbotState, ChatAgent
+from core.agents.email_agent import EmailState, EmailAgent
 from langgraph.config import RunnableConfig
 from langchain_core.messages import HumanMessage, BaseMessage, AIMessage
 

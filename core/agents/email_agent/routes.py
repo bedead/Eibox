@@ -1,4 +1,4 @@
-from .states import EmailState
+from core.agents.email_agent.states import EmailState
 from langgraph.graph import END
 
 

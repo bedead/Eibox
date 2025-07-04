@@ -6,6 +6,8 @@ venv
 logs/
 *.log
 token.json
+.langgraph_api
+nextagents
 
 # Ignore Python cache files
 __pycache__/
