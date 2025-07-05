@@ -10,7 +10,7 @@ class ChatInput(BaseModel):
     pending_emails: bool
 
 
-@router.post("/v1/gmail_monitor")
+@router.post("/gmail_monitor/v1")
 def chat(input: ChatInput):
     config = {"configurable": {"thread_id": input.thread_id}}
     response = EmailAgent.invoke(

@@ -1,33 +1,47 @@
 from fastapi import APIRouter, WebSocket
 from langgraph.config import RunnableConfig
 from langgraph.types import Command
+from langchain_core.messages import AIMessageChunk
 from core import ChatAgent, ChatbotState
 
 router = APIRouter()
 
 
-def call_graph(user_input, config: RunnableConfig):
+@router.websocket("/test/chatbot/v1/{thread_id}")
+async def websocket_endpoint(websocket: WebSocket, thread_id: str):
+    await websocket.accept()
+    try:
+        while True:
+            message = await websocket.receive_text()
+            await websocket.send_text(f"AI : {message}")
+
+    except Exception as e:
+        await websocket.send_text(f"[ERROR] {str(e)}")
+    finally:
+        await websocket.close()
+
+
+async def call_graph(user_input, config: RunnableConfig):
     # print(type(user_input))
-    events = ChatAgent.stream(
-        {"messages": [{"role": "user", "content": user_input}]},
-        config,
-        stream_mode="values",
-    )
-    for event in events:
-        if event["chatbot"]["messages"]:
-            return event["chatbot"]["messages"].content
+    async for chunk in ChatAgent.astream(
+        input={"messages": [{"role": "user", "content": user_input}]},
+        config={"configurable": {"thread_id": "test"}},
+        stream_mode="messages",
+    ):
+        if isinstance(chunk, tuple):
+            message_chunk, metadata = chunk
+            if isinstance(message_chunk, AIMessageChunk):
+                return message_chunk.content
 
 
 @router.websocket("/chatbot/v1/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, thread_id: str):
     await websocket.accept()
     try:
-        config = RunnableConfig(
-            recursion_limit=150, configurable={"thread_id": thread_id}
-        )
+        config = RunnableConfig(configurable={"thread_id": thread_id})
         while True:
             message = await websocket.receive_text()
-            ai_message = call_graph(user_input=message, config=config)
+            ai_message = await call_graph(user_input=message, config=config)
             print(f"AI response: {ai_message}")
             if ai_message:
                 await websocket.send_text(f"{ai_message}")
