@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from .routes import *
 
 app = FastAPI()
@@ -11,6 +12,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.debug = True
-app.include_router(test_router, prefix="/test", tags=["test"])
-app.include_router(websocket_router, prefix="/ws", tags=["websocket"])
+app.include_router(cron_router, prefix="/cron", tags=["cron"])
+app.include_router(test_router, prefix="/test", tags=["test", "websocket"])
+app.include_router(websocket_router, prefix="/ws", tags=["chatbot", "websocket"])
 # app.include_router(websocket_router)
