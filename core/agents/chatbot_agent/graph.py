@@ -140,4 +140,4 @@ graph_builder.add_conditional_edges(
 )
 graph_builder.add_edge("tools", "chatbot")
 
-graph = graph_builder.compile()
+graph = graph_builder.compile(checkpointer=MemorySaver())

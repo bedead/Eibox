@@ -1,13 +1,24 @@
-from core.agents.email_agent.states import EmailState
-
-from langgraph.types import Command
-from core.utils.utils import display_graph
 import asyncio
+from core.agents.chatbot_agent import ChatAgent  # adjust the import as needed
+from langchain_core.messages import AIMessage, AIMessageChunk
 
-# print(graph.get_graph().draw_mermaid())
 
-# display_graph(
-#     graph,
-#     use_mermaid=True,
-#     use_api=True,
-# )
+async def main():
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in {"exit", "quit"}:
+            break
+
+        async for chunk in ChatAgent.astream(
+            input={"messages": [{"role": "user", "content": user_input}]},
+            config={"configurable": {"thread_id": "test"}},
+            stream_mode="messages",
+        ):
+            if isinstance(chunk, tuple):
+                message_chunk, metadata = chunk
+                if isinstance(message_chunk, AIMessageChunk):
+                    print(f"AI: {message_chunk.content}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
