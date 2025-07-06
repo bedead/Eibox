@@ -25,22 +25,21 @@ def get_gmail_toolkit(state: EmailState) -> Command:
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
-    if not state["pending_email"]:
-        # gmail_tool.start()
+    # gmail_tool.start()
 
-        time.sleep(5)
-        gmail = {
-            "id": "17f3a12b2e6c9a5e",
-            "subject": "URGENT: Immediate Action Required on Your Internship Application",
-            "sender": "hr@companycareers.com",
-            "date": "2025-07-03T09:15:00Z",
-            "body": "Dear Satyam,\n\nWe reviewed your internship application and require additional documents to process your candidacy. Please upload your updated resume and project portfolio by 6 PM IST today. Without these, your application will not be considered further.\n\nIf you've already submitted them, kindly ignore this message.\n\nRegards,\nHR Team\nCompanyCareers",
-            "unread": True,
-            "snippet": "We reviewed your internship application and require additional documents to process...",
-        }
+    # time.sleep(5)
+    gmail = {
+        "id": "17f3a12b2e6c9a5e",
+        "subject": "URGENT: Immediate Action Required on Your Internship Application",
+        "sender": "hr@companycareers.com",
+        "date": "2025-07-03T09:15:00Z",
+        "body": "Dear Satyam,\n\nWe reviewed your internship application and require additional documents to process your candidacy. Please upload your updated resume and project portfolio by 6 PM IST today. Without these, your application will not be considered further.\n\nIf you've already submitted them, kindly ignore this message.\n\nRegards,\nHR Team\nCompanyCareers",
+        "unread": True,
+        "snippet": "We reviewed your internship application and require additional documents to process...",
+    }
 
-        # return Command(update={"email": gmail_tool.get_mails()[0]})
-        return Command(update={"email": gmail})
+    # return Command(update={"email": gmail_tool.get_mails()[0]})
+    return Command(update={"email": gmail})
 
 
 def analyze_importance(state: EmailState) -> Command:

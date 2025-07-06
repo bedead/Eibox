@@ -2,7 +2,7 @@ from textwrap import dedent
 from typing_extensions import Annotated
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.memory import MemorySaver, InMemorySaver
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
 from langchain.chat_models import init_chat_model
