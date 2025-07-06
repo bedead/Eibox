@@ -57,7 +57,11 @@ def analyze_importance(state: EmailState) -> Command:
     ]
     important_response = llm_model.invoke(messages).content.lower().strip()
 
-    return Command(update={"is_mail_important": important_response == "yes"})
+    return Command(
+        update={
+            "is_mail_important": important_response == "yes",
+        }
+    )
 
 
 def summarize_email(state: EmailState):
@@ -228,7 +232,7 @@ def send_email_response(state: EmailState):
             if state["response_edited"]
             else state["response_email_draft"]
         )
-        # status = gmail_tool.send_mail(
+        # status = gmail_tool.send_mawil(
         #     to=email_data["sender"],
         #     subject=email_data["subject"],
         #     body=response_text,

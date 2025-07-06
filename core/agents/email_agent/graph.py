@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, START, END
 
 from langgraph.checkpoint.memory import MemorySaver
-
+from langgraph.store.memory import InMemoryStore
 from core.agents.email_agent.nodes import (
     analyze_importance,
     auto_edit_response,
@@ -22,13 +22,15 @@ from core.agents.email_agent.routes import (
     email_importance_router,
     is_response_needed_router,
 )
-from core.agents.chatbot_agent.states import ChatbotState
+from core.agents.email_agent.states import EmailState
+
+store = InMemoryStore()
 
 
 def create_sequence_graph() -> StateGraph:
     # Create the State Graph
     sequence_graph = StateGraph(
-        state_schema=ChatbotState,
+        state_schema=EmailState,
     )
 
     # Add nodes to the graph
@@ -130,5 +132,5 @@ def create_sequence_graph() -> StateGraph:
 
 # conn = sqlite3.connect("checkpoints.sqlite")
 # checkpointer = SqliteSaver(conn)
-graph = create_sequence_graph().compile(checkpointer=MemorySaver())
+graph = create_sequence_graph().compile(checkpointer=MemorySaver(), store=store)
 # print(graph.get_graph().draw_mermaid())

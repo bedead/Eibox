@@ -2,7 +2,7 @@ from textwrap import dedent
 from typing_extensions import Annotated
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage
-from langgraph.checkpoint.memory import MemorySaver, InMemorySaver
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
 from langchain.chat_models import init_chat_model
@@ -105,7 +105,7 @@ llm_with_tools = llm.bind_tools(tools)
 
 def chatbot(state: ChatbotState) -> Command:
     message = llm_with_tools.invoke(
-        input=state["messages"],
+        input=state["messages"][-1].content,
         config={
             "configurable": {
                 "model": state["current_model_name"],
@@ -125,15 +125,31 @@ def set_initial_model(state: ChatbotState):
     }
 
 
-graph_builder.add_node("set_model", set_initial_model)
+def get_gmail(state: ChatbotState):
+    ## procesing
 
+    if state.get("pending_mail_read", False):
+        print(f"Email summary: {state['email_summary']}")
+        state["pending_mail_read"] = False
+
+    if state.get("pending_response_send", False):
+        print(f"Draft response : {state['response_email_draft']}")
+
+        state["pending_response_send"] = False
+
+    return state
+
+
+graph_builder.add_node("set_model", set_initial_model)
+graph_builder.add_node("get_gmail", get_gmail)
 graph_builder.add_node("chatbot", chatbot)
 
 tool_node = ToolNode(tools=tools)
 graph_builder.add_node("tools", tool_node)
 
 graph_builder.add_edge(START, "set_model")
-graph_builder.add_edge("set_model", "chatbot")
+graph_builder.add_edge("set_model", "get_gmail")
+graph_builder.add_edge("get_gmail", "chatbot")
 graph_builder.add_conditional_edges(
     "chatbot",
     tools_condition,
