@@ -3,6 +3,10 @@ from langgraph.config import RunnableConfig
 from langgraph.types import Command
 from langchain_core.messages import AIMessageChunk
 from core import ChatAgent, ChatbotState
+from core.job_scheduler.jobs import (
+    start_email_scheduler_job,
+    delete_email_scheduler_job,
+)
 
 router = APIRouter()
 
@@ -39,6 +43,8 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
     await websocket.accept()
     try:
         config = RunnableConfig(configurable={"thread_id": thread_id})
+        job = start_email_scheduler_job(thread_id=thread_id)
+        await websocket.send_text(job)
         while True:
             message = await websocket.receive_text()
             ai_message = await call_graph(user_input=message, config=config)
