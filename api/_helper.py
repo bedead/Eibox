@@ -19,3 +19,11 @@ def job_to_dict(job: Job) -> dict:
         "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
         "pending": job.pending if hasattr(job, "pending") else None,
     }
+
+
+def job_to_str(job: Job) -> str:
+    """
+    Convert an APScheduler Job object to a str representation.
+    """
+    result = job_to_dict(job)
+    return "".join(f"{key} : {value}" for key, value in result.items())

@@ -7,6 +7,7 @@ from core.job_scheduler.jobs import (
     start_email_scheduler_job,
     delete_email_scheduler_job,
 )
+from .._helper import job_to_str
 
 router = APIRouter()
 
@@ -41,10 +42,10 @@ async def call_graph(user_input, config: RunnableConfig):
 @router.websocket("/chatbot/v1/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, thread_id: str):
     await websocket.accept()
+    job = start_email_scheduler_job(thread_id=thread_id)
     try:
         config = RunnableConfig(configurable={"thread_id": thread_id})
-        job = start_email_scheduler_job(thread_id=thread_id)
-        await websocket.send_text(job)
+        await websocket.send_text(job_to_str(job=job))
         while True:
             message = await websocket.receive_text()
             ai_message = await call_graph(user_input=message, config=config)

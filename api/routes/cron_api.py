@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter
-from api.helper._helper import job_to_dict
+from api._helper import job_to_dict
 from core import EmailAgent, EmailState
 from pydantic import BaseModel
 from core.job_scheduler.jobs import (
