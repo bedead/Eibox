@@ -23,8 +23,7 @@ def chat(input: Job):
 
 @router.get("/gmail/delete/v1")
 def chat(input: Job):
-    delete_email_scheduler_job(thread_id=input.thread_id)
-    return {"success": 200}
+    return delete_email_scheduler_job(thread_id=input.thread_id)
 
 
 @router.get("/")

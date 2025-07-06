@@ -36,5 +36,8 @@ def start_email_scheduler_job(thread_id: str) -> Job:
 def delete_email_scheduler_job(thread_id: str):
     try:
         scheduler.remove_job(job_id=f"email-fetch-job-{thread_id}")
+        return {"status": "success"}
     except Exception as e:
-        print(f"Exception occured : {e}")
+        e = f"Exception occured : {e}"
+        print(e)
+        return {"status": e}
