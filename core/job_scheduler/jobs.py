@@ -27,7 +27,7 @@ def start_email_scheduler_job(thread_id: str) -> Job:
         fetch_email_data,
         args=(config,),
         trigger="interval",
-        seconds=10,
+        seconds=20,
         id=f"email-fetch-job-{thread_id}",
     )
     return job
