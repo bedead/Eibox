@@ -1,5 +1,4 @@
-import time
-
+import random
 from core.utils.prompts import (
     MAIL_SUMMARY_PROMPT,
     IS_MAIL_IMPORTANT_PROMPT,
@@ -15,9 +14,17 @@ from core.gmail import GmailToolKit
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
+from langgraph.store.redis import RedisStore
+
 
 llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
 # gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
+with RedisStore.from_conn_string("redis://localhost:6379") as store:
+    store.setup()
+
+user_id = "1"
+thread_id = "test"
+namespace_for_memory = (user_id, thread_id)
 
 
 def get_gmail_toolkit(state: EmailState) -> Command:
@@ -37,6 +44,8 @@ def get_gmail_toolkit(state: EmailState) -> Command:
         "unread": True,
         "snippet": "We reviewed your internship application and require additional documents to process...",
     }
+
+    store.put(namespace_for_memory, "mail", gmail)
 
     # return Command(update={"email": gmail_tool.get_mails()[0]})
     return Command(update={"email": gmail})
@@ -77,6 +86,7 @@ def summarize_email(state: EmailState):
             HumanMessage(content=f"{email_data}"),
         ]
         summary = llm_model.invoke(messages).content.lower().strip()
+        store.put(namespace_for_memory, "mail_summary", random.randint(1, 10))
 
         return {"email_summary": summary}
 
@@ -127,9 +137,11 @@ def generate_draft_response(state: EmailState):
             HumanMessage(content=f"{email_data}"),
             HumanMessage(content=f"Mail style :{state['response_format']}"),
         ]
-        response_format = llm_model.invoke(messages).content.lower().strip()
+        draft_response = llm_model.invoke(messages).content.lower().strip()
 
-        return {"response_email_draft": response_format}
+        store.put(namespace_for_memory, "draft_response", draft_response)
+
+        return {"response_email_draft": draft_response}
 
 
 def get_response_approval(state: EmailState):

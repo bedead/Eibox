@@ -27,3 +27,12 @@ def job_to_str(job: Job) -> str:
     """
     result = job_to_dict(job)
     return "".join(f"{key} : {value}" for key, value in result.items())
+
+
+import asyncio
+
+
+async def _to_async_gen(sync_gen):
+    loop = asyncio.get_event_loop()
+    for item in sync_gen:
+        yield item

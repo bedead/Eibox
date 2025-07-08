@@ -18,7 +18,6 @@ def fetch_email_data(config: RunnableConfig):
 
 
 scheduler = BackgroundScheduler()
-scheduler.start()
 
 
 def start_email_scheduler_job(thread_id: str) -> Job:
@@ -27,9 +26,10 @@ def start_email_scheduler_job(thread_id: str) -> Job:
         fetch_email_data,
         args=(config,),
         trigger="interval",
-        seconds=20,
+        seconds=10,
         id=f"email-fetch-job-{thread_id}",
     )
+    scheduler.start()
     return job
 
 

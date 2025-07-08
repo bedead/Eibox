@@ -1,7 +1,6 @@
 from langgraph.graph import StateGraph, START, END
 
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.store.memory import InMemoryStore
 from core.agents.email_agent.nodes import (
     analyze_importance,
     auto_edit_response,
@@ -14,6 +13,7 @@ from core.agents.email_agent.nodes import (
     send_email_response,
     get_gmail_toolkit,
     summarize_email,
+    store,
 )
 from core.agents.email_agent.routes import (
     check_read_email_router,
@@ -23,8 +23,6 @@ from core.agents.email_agent.routes import (
     is_response_needed_router,
 )
 from core.agents.email_agent.states import EmailState
-
-store = InMemoryStore()
 
 
 def create_sequence_graph() -> StateGraph:

@@ -7,7 +7,7 @@ from core.job_scheduler.jobs import (
     start_email_scheduler_job,
     delete_email_scheduler_job,
 )
-from .._helper import job_to_str
+from .._helper import _to_async_gen, job_to_str
 
 router = APIRouter()
 
@@ -26,9 +26,9 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
         await websocket.close()
 
 
-async def call_graph(user_input, config: RunnableConfig):
+def call_graph(user_input, config: RunnableConfig):
     # print(type(user_input))
-    async for chunk in ChatAgent.astream(
+    for chunk in ChatAgent.stream(
         input={"messages": [{"role": "user", "content": user_input}]},
         config={"configurable": {"thread_id": "test"}},
         stream_mode="messages",
@@ -36,23 +36,26 @@ async def call_graph(user_input, config: RunnableConfig):
         if isinstance(chunk, tuple):
             message_chunk, metadata = chunk
             if isinstance(message_chunk, AIMessageChunk):
-                return message_chunk.content
+                yield message_chunk.content
 
 
 @router.websocket("/chatbot/v1/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, thread_id: str):
     await websocket.accept()
-    # job = start_email_scheduler_job(thread_id=thread_id)
+    job = start_email_scheduler_job(thread_id=thread_id)
     try:
         config = RunnableConfig(configurable={"thread_id": thread_id})
-        # await websocket.send_text(job_to_str(job=job))
         while True:
             message = await websocket.receive_text()
-            ai_message = await call_graph(user_input=message, config=config)
+            ai_message = call_graph(user_input=message, config=config)
             print(f"AI response: {ai_message}")
-            if ai_message:
-                await websocket.send_text(f"{ai_message}")
-            else:
+            ai_message_gen = call_graph(user_input=message, config=config)
+            sent = False
+            async for chunk in _to_async_gen(ai_message_gen):
+                if chunk:
+                    await websocket.send_text(chunk)
+                    sent = True
+            if not sent:
                 await websocket.send_text("[ERROR] No response from AI")
 
     except Exception as e:

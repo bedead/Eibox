@@ -1,13 +1,22 @@
-from textwrap import dedent
 from typing_extensions import Annotated
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
 from langchain.chat_models import init_chat_model
 from core.agents.chatbot_agent.states import ChatbotState
 from langgraph.types import Command
+from langgraph.store.redis import RedisStore
+from langgraph.store.base import BaseStore
+
+
+with RedisStore.from_conn_string("redis://localhost:6379") as store:
+    store.setup()
+
+user_id = "1"
+thread_id = "test"
+namespace_for_memory = (user_id, thread_id)
+
 
 graph_builder = StateGraph(ChatbotState)
 available_models: dict = {
@@ -103,7 +112,8 @@ tools = [show_available_models, switch_current_model, get_current_model]
 llm_with_tools = llm.bind_tools(tools)
 
 
-def chatbot(state: ChatbotState) -> Command:
+def chatbot(state: ChatbotState, store: BaseStore) -> Command:
+    print(f'User message : {state["messages"][-1].content}')
     message = llm_with_tools.invoke(
         input=state["messages"][-1].content,
         config={
@@ -113,31 +123,25 @@ def chatbot(state: ChatbotState) -> Command:
             }
         },
     )
+    print(f"Complete reply Messages : {message}")
 
     # assert len(message.tool_calls) <= 1
     return Command(update={"messages": [message]})
 
 
-def set_initial_model(state: ChatbotState):
+def set_initial_model(state: ChatbotState, store: BaseStore):
     return {
-        "current_model_name": available_models["qwen2.5:0.5b"]["model_name"],
-        "current_model_provider": available_models["qwen2.5:0.5b"]["provider"],
+        "current_model_name": available_models["gemini-1.5-flash"]["model_name"],
+        "current_model_provider": available_models["gemini-1.5-flash"]["provider"],
     }
 
 
-def get_gmail(state: ChatbotState):
+def get_gmail(state: ChatbotState, store: BaseStore):
     ## procesing
 
-    if state.get("pending_mail_read", False):
-        print(f"Email summary: {state['email_summary']}")
-        state["pending_mail_read"] = False
+    print(f"Mail summary : {store.get(namespace_for_memory, key='mail_summary').value}")
 
-    if state.get("pending_response_send", False):
-        print(f"Draft response : {state['response_email_draft']}")
-
-        state["pending_response_send"] = False
-
-    return state
+    # return state
 
 
 graph_builder.add_node("set_model", set_initial_model)
@@ -156,4 +160,4 @@ graph_builder.add_conditional_edges(
 )
 graph_builder.add_edge("tools", "chatbot")
 
-graph = graph_builder.compile(checkpointer=MemorySaver())
+graph = graph_builder.compile(store=store)
