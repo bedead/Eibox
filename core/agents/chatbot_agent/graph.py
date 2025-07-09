@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing_extensions import Annotated
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage
@@ -8,6 +9,7 @@ from core.agents.chatbot_agent.states import ChatbotState
 from langgraph.types import Command
 from langgraph.store.redis import RedisStore
 from langgraph.store.base import BaseStore
+from langgraph.checkpoint.memory import MemorySaver
 
 
 with RedisStore.from_conn_string("redis://localhost:6379") as store:
@@ -113,9 +115,43 @@ llm_with_tools = llm.bind_tools(tools)
 
 
 def chatbot(state: ChatbotState, store: BaseStore) -> Command:
-    print(f'User message : {state["messages"][-1].content}')
+    mail = store.get(namespace=namespace_for_memory, key="mail").value
+    draft_response = store.get(
+        namespace=namespace_for_memory, key="draft_response"
+    ).value
+
+    system_instruction = dedent(
+        """
+            <instructions>
+            You are a Expert Assistent, who helps user manage their gmail accounts.
+            By reminding user if they have any new important mails to attend, or and asking for apporval on sending draft response to some mail.
+            Your tone of speech should be like jarvis from iron man, when informing about the new mail.
+            If no mail data is provided, then you will funtion normally and assist user on there queies.
+            </instructions>
+            
+            <mail_data>
+            This gmail data is recieved from a background task, and user does not know about this.
+            Received Mail data: 
+            Mail sender : {mail_sender}
+            Mail subject : {mail_subject}
+            Mail body : {mail_body}
+            Mail date : {mail_date}
+            Draft response: {draft_response}
+            </mail_data>
+            """
+    ).format(
+        mail_sender=mail.get("sender"),
+        mail_subject=mail.get("subject"),
+        mail_body=mail.get("body"),
+        mail_date=mail.get("date"),
+        draft_response=draft_response,
+    )
+
+    messages = [
+        {"role": "system", "content": system_instruction},
+    ] + state["messages"]
     message = llm_with_tools.invoke(
-        input=state["messages"][-1].content,
+        input=messages,
         config={
             "configurable": {
                 "model": state["current_model_name"],
@@ -123,7 +159,6 @@ def chatbot(state: ChatbotState, store: BaseStore) -> Command:
             }
         },
     )
-    print(f"Complete reply Messages : {message}")
 
     # assert len(message.tool_calls) <= 1
     return Command(update={"messages": [message]})
@@ -136,28 +171,18 @@ def set_initial_model(state: ChatbotState, store: BaseStore):
     }
 
 
-def get_gmail(state: ChatbotState, store: BaseStore):
-    ## procesing
-
-    print(f"Mail summary : {store.get(namespace_for_memory, key='mail_summary').value}")
-
-    # return state
-
-
 graph_builder.add_node("set_model", set_initial_model)
-graph_builder.add_node("get_gmail", get_gmail)
 graph_builder.add_node("chatbot", chatbot)
 
 tool_node = ToolNode(tools=tools)
 graph_builder.add_node("tools", tool_node)
 
 graph_builder.add_edge(START, "set_model")
-graph_builder.add_edge("set_model", "get_gmail")
-graph_builder.add_edge("get_gmail", "chatbot")
+graph_builder.add_edge("set_model", "chatbot")
 graph_builder.add_conditional_edges(
     "chatbot",
     tools_condition,
 )
 graph_builder.add_edge("tools", "chatbot")
 
-graph = graph_builder.compile(store=store)
+graph = graph_builder.compile(checkpointer=MemorySaver(), store=store)

@@ -4,9 +4,16 @@ from langgraph.graph.message import add_messages
 
 class ChatbotState(TypedDict):
     """
-    Represents the state of a main agent in a graph message history.
+    Represents the state of a main agent in a graph.
     """
 
-    messages: Annotated[list, add_messages]  # Tracking workflow message history
+    # User/Session management attribute
+    user_id: str
+    thread_id: str
+
+    # Current model management
     current_model_name: str
     current_model_provider: str
+
+    # Tracking workflow message history
+    messages: Annotated[list, add_messages]
