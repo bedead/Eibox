@@ -10,6 +10,7 @@ class ChatbotState(TypedDict):
     # User/Session management attribute
     user_id: str
     thread_id: str
+    namespace_for_memory: tuple
 
     # Current model management
     current_model_name: str

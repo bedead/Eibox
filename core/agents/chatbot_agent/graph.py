@@ -15,10 +15,6 @@ from langgraph.checkpoint.memory import MemorySaver
 with RedisStore.from_conn_string("redis://localhost:6379") as store:
     store.setup()
 
-user_id = "1"
-thread_id = "test"
-namespace_for_memory = (user_id, thread_id)
-
 
 graph_builder = StateGraph(ChatbotState)
 available_models: dict = {
@@ -115,9 +111,10 @@ llm_with_tools = llm.bind_tools(tools)
 
 
 def chatbot(state: ChatbotState, store: BaseStore) -> Command:
-    mail = store.get(namespace=namespace_for_memory, key="mail").value
+
+    mail = store.get(namespace=state["namespace_for_memory"], key="mail").value
     draft_response = store.get(
-        namespace=namespace_for_memory, key="draft_response"
+        namespace=state["namespace_for_memory"], key="draft_response"
     ).value
 
     system_instruction = dedent(
@@ -165,7 +162,12 @@ def chatbot(state: ChatbotState, store: BaseStore) -> Command:
 
 
 def set_initial_model(state: ChatbotState, store: BaseStore):
+    user_id = state.get("user_id", "1")
+    thread_id = state.get("thread_id", "test")
+    namespace_for_memory = (user_id, thread_id)
+
     return {
+        "namespace_for_memory": namespace_for_memory,
         "current_model_name": available_models["gemini-1.5-flash"]["model_name"],
         "current_model_provider": available_models["gemini-1.5-flash"]["provider"],
     }

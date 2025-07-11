@@ -10,19 +10,20 @@ router = APIRouter()
 
 
 class Job(BaseModel):
+    user_id: str
     thread_id: str
 
 
 @router.post("/gmail/start/v1")
 def chat(input: Job):
-    job = start_email_scheduler_job(thread_id=input.thread_id)
+    job = start_email_scheduler_job(user_id=input.user_id, thread_id=input.thread_id)
     return job_to_dict(job)
     # return job
 
 
-@router.get("/gmail/delete/v1")
+@router.post("/gmail/delete/v1")
 def chat(input: Job):
-    return delete_email_scheduler_job(thread_id=input.thread_id)
+    return delete_email_scheduler_job(user_id=input.user_id, thread_id=input.thread_id)
 
 
 @router.get("/")

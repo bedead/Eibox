@@ -9,9 +9,11 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.job import Job
 
 
-def fetch_email_data(config: RunnableConfig):
+def fetch_email_data(user_id: str, thread_id: str, config: RunnableConfig):
     print(f"[{datetime.now()}] Running email agent job...")
-    result = EmailAgent.invoke(input=ChatbotState(), config=config)
+    result = EmailAgent.invoke(
+        input={"thread_id": thread_id, "user_id": user_id}, config=config
+    )
     print(result)
 
     # return result
@@ -20,22 +22,22 @@ def fetch_email_data(config: RunnableConfig):
 scheduler = BackgroundScheduler()
 
 
-def start_email_scheduler_job(thread_id: str) -> Job:
+def start_email_scheduler_job(user_id: str, thread_id: str) -> Job:
     config = RunnableConfig(configurable={"thread_id": thread_id})
     job = scheduler.add_job(
         fetch_email_data,
-        args=(config,),
+        args=(user_id, thread_id, config),
         trigger="interval",
         seconds=10,
-        id=f"email-fetch-job-{thread_id}",
+        id=f"email-fetch-job-{user_id}-{thread_id}",
     )
     scheduler.start()
     return job
 
 
-def delete_email_scheduler_job(thread_id: str):
+def delete_email_scheduler_job(user_id: str, thread_id: str):
     try:
-        scheduler.remove_job(job_id=f"email-fetch-job-{thread_id}")
+        scheduler.remove_job(job_id=f"email-fetch-job-{user_id}-{thread_id}")
         return {"status": "success"}
     except Exception as e:
         e = f"Exception occured : {e}"

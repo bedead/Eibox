@@ -1,6 +1,5 @@
 from langgraph.graph import StateGraph, START, END
 
-from langgraph.checkpoint.memory import MemorySaver
 from core.agents.email_agent.nodes import (
     analyze_importance,
     generate_draft_response,
@@ -81,7 +80,5 @@ def create_sequence_graph() -> StateGraph:
     return sequence_graph
 
 
-# conn = sqlite3.connect("checkpoints.sqlite")
-# checkpointer = SqliteSaver(conn)
-graph = create_sequence_graph().compile(checkpointer=MemorySaver(), store=store)
+graph = create_sequence_graph().compile(store=store)
 # print(graph.get_graph().draw_mermaid())

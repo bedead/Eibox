@@ -21,10 +21,6 @@ llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
 with RedisStore.from_conn_string("redis://localhost:6379") as store:
     store.setup()
 
-user_id = "1"
-thread_id = "test"
-namespace_for_memory = (user_id, thread_id)
-
 
 def get_gmail_toolkit(state: EmailState) -> Command:
     """
@@ -44,10 +40,17 @@ def get_gmail_toolkit(state: EmailState) -> Command:
         "snippet": "We reviewed your internship application and require additional documents to process...",
     }
 
+    user_id = state.get("user_id", "1")
+    thread_id = state.get("thread_id", "test")
+
+    namespace_for_memory = (user_id, thread_id)
+
     store.put(namespace_for_memory, "mail", gmail)
 
     # return Command(update={"email": gmail_tool.get_mails()[0]})
-    return Command(update={"email": gmail})
+    return Command(
+        update={"email": gmail, "namespace_for_memory": namespace_for_memory}
+    )
 
 
 def analyze_importance(state: EmailState) -> Command:
@@ -85,7 +88,7 @@ def summarize_email(state: EmailState):
             HumanMessage(content=f"{email_data}"),
         ]
         summary = llm_model.invoke(messages).content.lower().strip()
-        store.put(namespace_for_memory, "mail_summary", summary)
+        store.put(state["namespace_for_memory"], "mail_summary", summary)
 
         return {"email_summary": summary}
 
@@ -138,6 +141,6 @@ def generate_draft_response(state: EmailState):
         ]
         draft_response = llm_model.invoke(messages).content.lower().strip()
 
-        store.put(namespace_for_memory, "draft_response", draft_response)
+        store.put(state["namespace_for_memory"], "draft_response", draft_response)
 
         return {"response_email_draft": draft_response}
