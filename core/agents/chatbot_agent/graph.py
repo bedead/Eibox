@@ -11,6 +11,12 @@ from langgraph.store.redis import RedisStore
 from langgraph.store.base import BaseStore
 from langgraph.checkpoint.memory import MemorySaver
 
+from apscheduler.job import Job
+from core.job_scheduler.jobs import (
+    delete_email_scheduler_job,
+    start_email_scheduler_job,
+)
+
 
 with RedisStore.from_conn_string("redis://localhost:6379") as store:
     store.setup()
@@ -59,54 +65,19 @@ available_models: dict = {
 
 
 @tool
-def show_available_models(
-    tool_call_id: Annotated[str, InjectedToolCallId],
-) -> ToolMessage:
-    """Returns all the llm models currently available to use after switching."""
-    return ToolMessage(content=[available_models], tool_call_id=tool_call_id)
+def start_email_scheduler_job_tool(user_id: str, thread_id: str):
+    job: Job = start_email_scheduler_job(user_id, thread_id)
+    return job
 
 
 @tool
-def switch_current_model(
-    model_name: str, tool_call_id: Annotated[str, InjectedToolCallId]
-) -> str:
-    """Tool used to switch between various models to new model_name and model_provider"""
-    model_provider = available_models[model_name]["provider"]
-
-    if model_provider:
-        return Command(
-            update={
-                "current_model_name": model_name,
-                "current_model_provider": model_provider,
-                "messages": [
-                    ToolMessage(
-                        f"Success switching to {model_name} with provider {model_provider}.",
-                        tool_call_id=tool_call_id,
-                    )
-                ],
-            }
-        )
-    else:
-        return ToolMessage(f"{model_name} is not available.")
-
-
-@tool
-def get_current_model(
-    state: Annotated[dict, InjectedState],
-    tool_call_id: Annotated[str, InjectedToolCallId],
-) -> str:
-    """Returns the current llm model being used."""
-    return ToolMessage(
-        content={
-            "current_model_name": state["current_model_name"],
-            "current_model_provider": state["current_model_provider"],
-        },
-        tool_call_id=tool_call_id,
-    )
+def delete_email_scheduler_job_tool(user_id: str, thread_id: str):
+    result = delete_email_scheduler_job(user_id, thread_id)
+    return result
 
 
 llm = init_chat_model()
-tools = [show_available_models, switch_current_model, get_current_model]
+tools = [start_email_scheduler_job_tool, delete_email_scheduler_job_tool]
 llm_with_tools = llm.bind_tools(tools)
 
 
