@@ -16,7 +16,9 @@ class Job(BaseModel):
 
 @router.post("/gmail/start/v1")
 def chat(input: Job):
-    job = start_email_scheduler_job(user_id=input.user_id, thread_id=input.thread_id)
+    job = start_email_scheduler_job(
+        user_id=input.user_id, thread_id=input.thread_id, interval=30
+    )
     return job_to_dict(job)
     # return job
 

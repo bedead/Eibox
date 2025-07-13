@@ -46,7 +46,7 @@ def call_graph(user_input: str, user_id: str, thread_id: str, config: RunnableCo
 @router.websocket("/chatbot/v1/{user_id}/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str, thread_id: str):
     await websocket.accept()
-    job = start_email_scheduler_job(user_id=user_id, thread_id=thread_id)
+    job = start_email_scheduler_job(user_id=user_id, thread_id=thread_id, interval=30)
     try:
         config = RunnableConfig(configurable={"thread_id": thread_id})
         while True:
