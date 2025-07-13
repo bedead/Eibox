@@ -344,16 +344,11 @@ class GmailToolKit:
                 if self.recent_emails and self.save_json:
                     self.save_emails_to_json(self.recent_emails)
                 self.last_check_time = datetime.now()
+
+                return self.recent_emails
             except Exception as e:
                 self.logger.error(f"Error in monitoring: {str(e)}")
             self.logger.debug("Completed single email check...")
-
-    def wait_for_data(self, file_path: str, timeout: int = 10):
-        start_time = time.time()
-        while not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
-            if time.time() - start_time > timeout:
-                raise TimeoutError("Data not ready within timeout.")
-            time.sleep(0.5)
 
     def stop(self):
         """Stop the monitoring process."""

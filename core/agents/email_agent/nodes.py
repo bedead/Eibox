@@ -17,7 +17,7 @@ from langgraph.store.redis import RedisStore
 
 
 llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
-# gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
+gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
 with RedisStore.from_conn_string("redis://localhost:6379") as store:
     store.setup()
 
@@ -27,7 +27,7 @@ def get_gmail_toolkit(state: EmailState) -> Command:
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
-    # gmail_tool.start()
+    # data = gmail_tool.start()
 
     # time.sleep(5)
     gmail = {

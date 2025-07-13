@@ -64,14 +64,18 @@ available_models: dict = {
 }
 
 
+# TODO: add tool for fetching gmails with specific conditions
+#       like from date, to date, how many mails, with search query, read mails, unread mails, spam mails, *
 @tool
-def start_email_scheduler_job_tool(user_id: str, thread_id: str):
+def start_email_scheduler_job_tool(user_id: str, thread_id: str, interval: int):
+    """ """
     job: Job = start_email_scheduler_job(user_id, thread_id)
     return job
 
 
 @tool
 def delete_email_scheduler_job_tool(user_id: str, thread_id: str):
+    """ """
     result = delete_email_scheduler_job(user_id, thread_id)
     return result
 
