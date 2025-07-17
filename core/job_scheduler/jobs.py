@@ -1,7 +1,7 @@
 from ast import arg
 from datetime import datetime
 from core.agents.chatbot_agent import ChatbotState
-from core.agents.email_agent import EmailAgent
+from core.agents.email_agent import EmailAgent, EmailState
 from langchain_core.runnables import RunnableConfig
 
 
@@ -11,9 +11,9 @@ from apscheduler.job import Job
 
 def fetch_email_data(user_id: str, thread_id: str, config: RunnableConfig):
     print(f"[{datetime.now()}] Running email agent job...")
-    result = EmailAgent.invoke(
-        input={"thread_id": thread_id, "user_id": user_id}, config=config
-    )
+    config["configurable"]["user_id"] = user_id
+    config["configurable"]["thread_id"] = thread_id
+    result = EmailAgent.invoke(input=EmailState(), config=config)
     print(result)
 
     # return result

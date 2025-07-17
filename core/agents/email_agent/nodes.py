@@ -10,6 +10,8 @@ from core.agents.email_agent.states import EmailState
 from langgraph.graph import END
 from langgraph.types import interrupt, Command
 from core.gmail import GmailToolKit
+from langchain_core.runnables import RunnableConfig
+
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
@@ -22,7 +24,7 @@ with RedisStore.from_conn_string("redis://localhost:6379") as store:
     store.setup()
 
 
-def get_gmail_toolkit(state: EmailState) -> Command:
+def get_gmail_toolkit(state: EmailState, config: RunnableConfig) -> Command:
     """
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
@@ -40,8 +42,8 @@ def get_gmail_toolkit(state: EmailState) -> Command:
         "snippet": "We reviewed your internship application and require additional documents to process...",
     }
 
-    user_id = state.get("user_id", "1")
-    thread_id = state.get("thread_id", "test")
+    user_id = config["configurable"].get("user_id", "test01")
+    thread_id = config["configurable"].get("thread_id", "test_thread")
 
     namespace_for_memory = (user_id, thread_id)
 

@@ -10,8 +10,9 @@ from langgraph.types import Command
 from langgraph.store.redis import RedisStore
 from langgraph.store.base import BaseStore
 from langgraph.checkpoint.memory import MemorySaver
-
+from langchain_core.runnables import RunnableConfig
 from apscheduler.job import Job
+from core.gmail.gmail_toolkit import GmailToolKit
 from core.job_scheduler.jobs import (
     delete_email_scheduler_job,
     start_email_scheduler_job,
@@ -64,59 +65,136 @@ available_models: dict = {
 }
 
 
-# TODO: add tool for fetching gmails with specific conditions
-#       like from date, to date, how many mails, with search query, read mails, unread mails, spam mails, *
+@tool
+def get_userid_tool(config: RunnableConfig):
+    """
+    Retrieves the user ID and thread ID from the AI agent's runtime configuration.
+
+    This tool is typically used to identify the current user and their associated chat thread
+
+    Returns:
+        dict: A dictionary containing:
+            - "user_id" (str): The ID or username of the user.
+            - "thread_id" (str): The ID representing the current conversation or chat instance.
+    """
+
+    return {
+        "user_id": config["configurable"].get("user_id"),
+        "thread_id": config["configurable"].get("thread_id"),
+    }
+
+
 @tool
 def start_email_scheduler_job_tool(user_id: str, thread_id: str, interval: int):
-    """ """
-    job: Job = start_email_scheduler_job(user_id, thread_id)
+    """
+    Starts a scheduled background job that periodically checks or processes emails
+    related to a specific user and thread.
+
+    Args:
+        user_id (str): The unique identifier for the user.
+        thread_id (str): The unique identifier of the email thread to track.
+        interval (int): The frequency (in seconds) at which the job should run.
+
+    Returns:
+        Job: The background job instance that was started.
+    """
+    job: Job = start_email_scheduler_job(
+        user_id=user_id, thread_id=thread_id, interval=interval
+    )
     return job
 
 
 @tool
 def delete_email_scheduler_job_tool(user_id: str, thread_id: str):
-    """ """
+    """
+    Deletes or stops an existing scheduled job that was set to process or monitor
+    emails for a specific user and thread.
+
+    Args:
+        user_id (str): The unique identifier for the user.
+        thread_id (str): The unique identifier of the thread whose job should be deleted.
+
+    Returns:
+        Dict['status':]: status is "success" if job removed, and Exception e is returned in status.
+    """
     result = delete_email_scheduler_job(user_id, thread_id)
     return result
 
 
+# TODO: add tool for fetching gmails with specific conditions
+# like from date, to date, how many mails, with search query, read mails, unread mails, spam mails, *
+@tool
+def search_gmails():
+    """
+    Tool to search Gmail messages based on filters.
+
+    This function is intended to support search features such as:
+    - Filtering by date range (from, to)
+    - Limiting the number of emails returned
+    - Applying search queries (subject, sender, keywords)
+    - Filtering by read/unread status
+    - Including or excluding spam folder
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+    toolkit = GmailToolKit()
+
+
 llm = init_chat_model()
-tools = [start_email_scheduler_job_tool, delete_email_scheduler_job_tool]
+tools = [
+    start_email_scheduler_job_tool,
+    delete_email_scheduler_job_tool,
+    get_userid_tool,
+]
 llm_with_tools = llm.bind_tools(tools)
 
 
 def chatbot(state: ChatbotState, store: BaseStore) -> Command:
 
-    mail = store.get(namespace=state["namespace_for_memory"], key="mail").value
+    mail = store.get(namespace=state["namespace_for_memory"], key="mail")
     draft_response = store.get(
         namespace=state["namespace_for_memory"], key="draft_response"
-    ).value
+    )
 
     system_instruction = dedent(
         """
-            <instructions>
-            You are a Expert Assistent, who helps user manage their gmail accounts.
-            By reminding user if they have any new important mails to attend, or and asking for apporval on sending draft response to some mail.
-            Your tone of speech should be like jarvis from iron man, when informing about the new mail.
-            If no mail data is provided, then you will funtion normally and assist user on there queies.
-            </instructions>
-            
-            <mail_data>
-            This gmail data is recieved from a background task, and user does not know about this.
-            Received Mail data: 
-            Mail sender : {mail_sender}
-            Mail subject : {mail_subject}
-            Mail body : {mail_body}
-            Mail date : {mail_date}
-            Draft response: {draft_response}
-            </mail_data>
-            """
+        <instructions>
+        You are an expert assistant designed to help users manage their Gmail accounts efficiently.
+
+        Your responsibilities include:
+        - Notifying the user about any new important emails in a formal, concise tone — similar to JARVIS from Iron Man.
+        - Seeking the user's approval before sending a pre-generated draft reply to any email.
+        - Answering the user's queries normally if no email data is available.
+
+        Tool Usage:
+        - If additional context is required (e.g., user identity, thread details, etc), use available relevant tools.
+        - If the user requests mail filtering, summaries, or specific content, use search or query tools accordingly.
+
+        Always behave with professionalism, clarity, and a touch of JARVIS-like wit when appropriate.
+
+        </instructions>
+
+        <mail_data>
+        This email data has been received via a background task — the user is not yet aware of it.
+
+        New Email Details:
+        - Sender: {mail_sender}
+        - Subject: {mail_subject}
+        - Body: {mail_body}
+        - Date: {mail_date}
+        - Draft Response Prepared: {draft_response}
+        </mail_data>
+        """
     ).format(
-        mail_sender=mail.get("sender"),
-        mail_subject=mail.get("subject"),
-        mail_body=mail.get("body"),
-        mail_date=mail.get("date"),
-        draft_response=draft_response,
+        mail_sender=mail.value.get("sender") if mail else None,
+        mail_subject=mail.value.get("subject") if mail else None,
+        mail_body=mail.value.get("body") if mail else None,
+        mail_date=mail.value.get("date") if mail else None,
+        draft_response=draft_response.value if draft_response else None,
     )
 
     messages = [
@@ -136,9 +214,9 @@ def chatbot(state: ChatbotState, store: BaseStore) -> Command:
     return Command(update={"messages": [message]})
 
 
-def set_initial_model(state: ChatbotState, store: BaseStore):
-    user_id = state.get("user_id", "1")
-    thread_id = state.get("thread_id", "test")
+def set_initial_model(state: ChatbotState, store: BaseStore, config: RunnableConfig):
+    user_id = config["configurable"].get("user_id", "1")
+    thread_id = config["configurable"].get("thread_id", "test")
     namespace_for_memory = (user_id, thread_id)
 
     return {

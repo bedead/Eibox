@@ -31,10 +31,8 @@ def call_graph(user_input: str, user_id: str, thread_id: str, config: RunnableCo
     for chunk in ChatAgent.stream(
         input={
             "messages": [{"role": "user", "content": user_input}],
-            "thread_id": thread_id,
-            "user_id": user_id,
         },
-        config={"configurable": {"thread_id": "test"}},
+        config={"configurable": {"thread_id": thread_id, "user_id": user_id}},
         stream_mode="messages",
     ):
         if isinstance(chunk, tuple):
@@ -54,7 +52,6 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, thread_id: str)
             ai_message_gen = call_graph(
                 user_input=message, user_id=user_id, thread_id=thread_id, config=config
             )
-            print(f"AI response: {ai_message_gen}")
             sent = False
             async for chunk in _to_async_gen(ai_message_gen):
                 if chunk:

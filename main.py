@@ -11,7 +11,7 @@ async def main():
 
         async for chunk in ChatAgent.astream(
             input={"messages": [{"role": "user", "content": user_input}]},
-            config={"configurable": {"thread_id": "test"}},
+            config={"configurable": {"thread_id": "test", "user_id": "satyam"}},
             stream_mode="messages",
         ):
             if isinstance(chunk, tuple):
