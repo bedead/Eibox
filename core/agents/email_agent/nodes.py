@@ -31,7 +31,6 @@ def get_gmail_toolkit(state: EmailState, config: RunnableConfig) -> Command:
     """
     # data = gmail_tool.start()
 
-    # time.sleep(5)
     gmail = {
         "id": "17f3a12b2e6c9a5e",
         "subject": "URGENT: Immediate Action Required on Your Internship Application",
