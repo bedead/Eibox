@@ -2,7 +2,10 @@ import asyncio
 from core.agents.chatbot_agent import ChatAgent  # adjust the import as needed
 from langchain_core.messages import AIMessage, AIMessageChunk
 
-from core.job_scheduler.jobs import start_email_scheduler_job, delete_email_scheduler_job
+from core.job_scheduler.jobs import (
+    start_email_scheduler_job,
+    delete_email_scheduler_job,
+)
 
 
 async def main():
@@ -17,6 +20,7 @@ async def main():
             input={"messages": [{"role": "user", "content": user_input}]},
             config={"configurable": {"thread_id": "test", "user_id": "satyam"}},
             stream_mode="messages",
+            debug=True,
         ):
             if isinstance(chunk, tuple):
                 message_chunk, metadata = chunk

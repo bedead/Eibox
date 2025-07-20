@@ -10,6 +10,7 @@ from core.agents.email_agent.states import EmailState
 from langgraph.graph import END
 from langgraph.types import interrupt, Command
 from core.gmail import GmailToolKit
+from core.storage.setup import store
 from langchain_core.runnables import RunnableConfig
 
 
@@ -20,8 +21,6 @@ from langgraph.store.redis import RedisStore
 
 llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
 gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
-with RedisStore.from_conn_string("redis://localhost:6379") as store:
-    store.setup()
 
 
 def get_gmail_toolkit(state: EmailState, config: RunnableConfig) -> Command:

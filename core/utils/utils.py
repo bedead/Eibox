@@ -5,9 +5,14 @@ import os
 load_dotenv()
 
 
-def get_google_gemini_key():
+def get_google_gemini_key() -> str | None:
     """Get the Google Gemini API key from environment variables."""
     return os.environ.get("GOOGLE_API_KEY")
+
+
+def get_redis_store_host() -> str | None:
+    """Get the redis store host endpoint with port."""
+    return os.environ.get("REDIS_STORE_HOST")
 
 
 def get_groq_key():

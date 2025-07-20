@@ -7,7 +7,6 @@ from core.agents.email_agent.nodes import (
     mail_response_format,
     get_gmail_toolkit,
     summarize_email,
-    store,
 )
 from core.agents.email_agent.routes import (
     check_read_email_router,
@@ -15,6 +14,7 @@ from core.agents.email_agent.routes import (
     is_response_needed_router,
 )
 from core.agents.email_agent.states import EmailState
+from core.storage.setup import store
 
 
 def create_sequence_graph() -> StateGraph:

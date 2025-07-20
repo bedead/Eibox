@@ -12,7 +12,7 @@ from google.auth.transport.requests import Request
 from datetime import datetime, timedelta
 import logging
 from google.oauth2.credentials import Credentials
-from pydantic import BaseModel, FilePath
+from pydantic import FilePath
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
