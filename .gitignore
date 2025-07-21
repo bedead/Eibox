@@ -8,7 +8,8 @@ logs/
 token.json
 .langgraph_api
 nextagents
-.vsocode
+.vscode
+.qodo
 
 # Ignore Python cache files
 __pycache__/
