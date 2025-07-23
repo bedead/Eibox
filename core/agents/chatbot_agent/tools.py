@@ -8,6 +8,7 @@ from core.job_scheduler.jobs import (
 from langchain_core.runnables import RunnableConfig
 from typing import List, Optional
 from langchain_core.tools import tool
+from core.storage.setup import store
 
 
 @tool
@@ -163,10 +164,7 @@ all_tools = [
     search_gmails_tool,
 ]
 
-# Example of creating a tool registry
-# tool_registry = {str(uuid.uuid4()): tool for tool in all_tools}
-
-# # Store metadata for each tool
+# Store metadata for each tool
 # for tool_id, tool in tool_registry.items():
 #     store.put(
 #         ("tools",),  # Namespace

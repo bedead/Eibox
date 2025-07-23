@@ -2,14 +2,13 @@ from textwrap import dedent
 from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
-from langchain.chat_models import init_chat_model
 from core.agents.chatbot_agent.states import ChatbotState
 from langgraph.types import Command
 from langgraph.store.base import BaseStore
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
-from core.agents.chatbot_agent.tools import all_tools
-from core.storage.setup import store
+from core.storage.setup import db_store
+from core.agents.chatbot_agent.bigtool_agent import agent
 
 graph_builder = StateGraph(ChatbotState)
 available_models: dict = {
@@ -51,11 +50,6 @@ available_models: dict = {
         "provider": "google_genai",
     },
 }
-
-
-llm = init_chat_model()
-
-llm_with_tools = llm.bind_tools(all_tools)
 
 
 def chatbot(state: ChatbotState, store: BaseStore) -> Command:
@@ -103,19 +97,23 @@ def chatbot(state: ChatbotState, store: BaseStore) -> Command:
     )
 
     messages = [
-        {"role": "system", "content": system_instruction},
+        SystemMessage(content=system_instruction),
     ] + state["messages"]
-    message = llm_with_tools.invoke(
-        input=messages,
-        config={
-            "configurable": {
-                "model": state["current_model_name"],
-                "model_provider": state["current_model_provider"],
-            }
-        },
-    )
-
-    # assert len(message.tool_calls) <= 1
+    # message = llm_with_tools.invoke(
+    #     input=messages,
+    #     config={
+    #         "configurable": {
+    #             "model": state["current_model_name"],
+    #             "model_provider": state["current_model_provider"],
+    #         }
+    #     },
+    # )
+    message = agent.invoke({"messages": messages})
+    # print(f"messages: {messages}")
+    if isinstance(message, dict):
+        message = message.get("messages")
+        message = message[-1] if message else None
+    print(f"message: {message}")
     return Command(update={"messages": [message]})
 
 
@@ -126,23 +124,21 @@ def set_initial_model(state: ChatbotState, store: BaseStore, config: RunnableCon
 
     return {
         "namespace_for_memory": namespace_for_memory,
-        "current_model_name": available_models["gemini-1.5-flash"]["model_name"],
-        "current_model_provider": available_models["gemini-1.5-flash"]["provider"],
     }
 
 
 graph_builder.add_node("set_model", set_initial_model)
 graph_builder.add_node("chatbot", chatbot)
 
-tool_node = ToolNode(tools=all_tools)
-graph_builder.add_node("tools", tool_node)
+# tool_node = ToolNode(tools=tool_registry)
+# graph_builder.add_node("tools", tool_node)
 
 graph_builder.add_edge(START, "set_model")
 graph_builder.add_edge("set_model", "chatbot")
-graph_builder.add_conditional_edges(
-    "chatbot",
-    tools_condition,
-)
-graph_builder.add_edge("tools", "chatbot")
+# graph_builder.add_conditional_edges(
+#     "chatbot",
+#     tools_condition,
+# )
+# graph_builder.add_edge("tools", "chatbot")
 
-graph = graph_builder.compile(checkpointer=MemorySaver(), store=store)
+graph = graph_builder.compile(checkpointer=MemorySaver(), store=db_store)

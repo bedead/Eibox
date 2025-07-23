@@ -14,7 +14,7 @@ from core.agents.email_agent.routes import (
     is_response_needed_router,
 )
 from core.agents.email_agent.states import EmailState
-from core.storage.setup import store
+from core.storage.setup import db_store
 
 
 def create_sequence_graph() -> StateGraph:
@@ -80,5 +80,5 @@ def create_sequence_graph() -> StateGraph:
     return sequence_graph
 
 
-graph = create_sequence_graph().compile(store=store)
+graph = create_sequence_graph().compile(store=db_store)
 # print(graph.get_graph().draw_mermaid())

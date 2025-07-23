@@ -10,8 +10,8 @@ from core.agents.email_agent.states import EmailState
 from langgraph.graph import END
 from langgraph.types import interrupt, Command
 from core.gmail import GmailToolKit
-from core.storage.setup import store
 from langchain_core.runnables import RunnableConfig
+from langgraph.store.base import BaseStore
 
 
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -23,7 +23,9 @@ llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
 gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
 
 
-def get_gmail_toolkit(state: EmailState, config: RunnableConfig) -> Command:
+def get_gmail_toolkit(
+    state: EmailState, config: RunnableConfig, store: BaseStore
+) -> Command:
     """
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
@@ -75,7 +77,7 @@ def analyze_importance(state: EmailState) -> Command:
     )
 
 
-def summarize_email(state: EmailState):
+def summarize_email(state: EmailState, store: BaseStore):
     """
     Summarize the email using the AI toolkit.
     """
@@ -126,7 +128,7 @@ def mail_response_format(state: EmailState):
         return {"response_format": response_format}
 
 
-def generate_draft_response(state: EmailState):
+def generate_draft_response(state: EmailState, store: BaseStore):
     """
     Generate a draft response for the email using the AI toolkit.
     """
