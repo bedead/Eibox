@@ -28,5 +28,7 @@ async def main():
                     print(f"AI: {message_chunk.content}")
 
 
+from core.storage.setup import db_store
+
 if __name__ == "__main__":
     asyncio.run(main())

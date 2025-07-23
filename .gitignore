@@ -10,6 +10,7 @@ token.json
 nextagents
 .vscode
 .qodo
+redis_connection.json
 
 # Ignore Python cache files
 __pycache__/

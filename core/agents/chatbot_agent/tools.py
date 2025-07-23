@@ -8,7 +8,6 @@ from core.job_scheduler.jobs import (
 from langchain_core.runnables import RunnableConfig
 from typing import List, Optional
 from langchain_core.tools import tool
-from core.storage.setup import store
 
 
 @tool
