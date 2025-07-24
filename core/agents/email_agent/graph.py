@@ -6,7 +6,6 @@ from core.agents.email_agent.nodes import (
     is_response_needed,
     mail_response_format,
     get_gmail_toolkit,
-    summarize_email,
 )
 from core.agents.email_agent.routes import (
     check_read_email_router,
@@ -32,7 +31,6 @@ def create_sequence_graph() -> StateGraph:
         node="analyze_mail_importance_node",
         action=analyze_importance,
     )
-    sequence_graph.add_node(node="summarize_email_node", action=summarize_email)
     sequence_graph.add_node(
         node="is_response_needed_node",
         action=is_response_needed,
@@ -60,11 +58,10 @@ def create_sequence_graph() -> StateGraph:
         source="analyze_mail_importance_node",
         path=email_importance_router,
         path_map={
-            "summarize_email_node": "summarize_email_node",
+            "is_response_needed_node": "is_response_needed_node",
             "get_gmail_toolkit_node": "get_gmail_toolkit_node",
         },
     )
-    sequence_graph.add_edge("summarize_email_node", "is_response_needed_node")
     sequence_graph.add_conditional_edges(
         source="is_response_needed_node",
         path=is_response_needed_router,

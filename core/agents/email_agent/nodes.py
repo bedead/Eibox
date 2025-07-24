@@ -16,7 +16,6 @@ from langgraph.store.base import BaseStore
 
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
-from langgraph.store.redis import RedisStore
 
 
 llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
@@ -42,16 +41,44 @@ def get_gmail_toolkit(
         "snippet": "We reviewed your internship application and require additional documents to process...",
     }
 
+    # creating namespace for storage
     user_id = config["configurable"].get("user_id", "test01")
     thread_id = config["configurable"].get("thread_id", "test_thread")
+    namespace_for_memory = (user_id, thread_id, "emails")
 
-    namespace_for_memory = (user_id, thread_id)
+    # fetching data from storage if available
+    data_list: list = store.get(namespace_for_memory, key="data")
+    unread_mails: int = store.get(namespace_for_memory, key="unread_mails")
 
-    store.put(namespace_for_memory, "mail", gmail)
+    # Debug: printing the data fetched from storage
+    print(f"Data list from store: {data_list.value if data_list else None}")
+    print(f"Unread mails from store: {unread_mails.value if unread_mails else None}")
+
+    # processing if data not available
+    if not data_list:
+        data_list = []
+    if not unread_mails:
+        unread_mails = 0
+
+    # adding new updated data to the storage
+    if not isinstance(data_list, list):
+        store.put(namespace_for_memory, key="data", value=data_list.value + [gmail])
+    else:
+        store.put(namespace_for_memory, key="data", value=data_list + [gmail])
+    if not isinstance(unread_mails, int):
+        store.put(
+            namespace_for_memory, key="unread_mails", value=unread_mails.value + 1
+        )
+    else:
+        store.put(namespace_for_memory, key="unread_mails", value=unread_mails + 1)
 
     # return Command(update={"email": gmail_tool.get_mails()[0]})
     return Command(
-        update={"email": gmail, "namespace_for_memory": namespace_for_memory}
+        update={
+            "email": gmail,
+            "namespace_for_memory": namespace_for_memory,
+            "current_mail_id": gmail["id"],
+        }
     )
 
 
@@ -59,8 +86,6 @@ def analyze_importance(state: EmailState) -> Command:
     """
     Analyze the importance of the email using the AI toolkit.
     """
-    if not state["email"]:
-        return
 
     email_data = state["email"]
 
@@ -77,72 +102,60 @@ def analyze_importance(state: EmailState) -> Command:
     )
 
 
-def summarize_email(state: EmailState, store: BaseStore):
-    """
-    Summarize the email using the AI toolkit.
-    """
-    if not state["email"]:
-        return
-    if state["is_mail_important"]:
-        email_data = state["email"]
-        messages = [
-            SystemMessage(content=MAIL_SUMMARY_PROMPT),
-            HumanMessage(content=f"{email_data}"),
-        ]
-        summary = llm_model.invoke(messages).content.lower().strip()
-        store.put(state["namespace_for_memory"], "mail_summary", summary)
-
-        return {"email_summary": summary}
-
-
 def is_response_needed(state: EmailState):
     """
     Check if a response is needed for the email using the AI toolkit.
     """
-    if not state["email"]:
-        return
-    if state["is_mail_important"]:
-        email_data = state["email"]
-        messages = [
-            SystemMessage(content=IS_RESPONSE_NEEDED_PROMPT),
-            HumanMessage(content=f"{email_data}"),
-        ]
-        response_needed = llm_model.invoke(messages).content.lower().strip()
+    email_data = state["email"]
+    messages = [
+        SystemMessage(content=IS_RESPONSE_NEEDED_PROMPT),
+        HumanMessage(content=f"{email_data}"),
+    ]
+    response_needed = llm_model.invoke(messages).content.lower().strip()
 
-        return {"is_response_needed": response_needed == "yes"}
+    return {"is_response_needed": response_needed == "yes"}
 
 
 def mail_response_format(state: EmailState):
     """
     Get the response format for the email using the AI toolkit.
     """
-    if not state["email"]:
-        return
-    if state["is_mail_important"] and state["is_response_needed"]:
-        email_data = state["email"]
-        messages = [
-            SystemMessage(content=MAIL_RESPONSE_FORMAT_PROMPT),
-            HumanMessage(content=f"{email_data}"),
-        ]
-        response_format = llm_model.invoke(messages).content.lower().strip()
-        return {"response_format": response_format}
+    email_data = state["email"]
+    messages = [
+        SystemMessage(content=MAIL_RESPONSE_FORMAT_PROMPT),
+        HumanMessage(content=f"{email_data}"),
+    ]
+    response_format = llm_model.invoke(messages).content.lower().strip()
+    return {"response_format": response_format}
 
 
 def generate_draft_response(state: EmailState, store: BaseStore):
     """
     Generate a draft response for the email using the AI toolkit.
     """
-    if not state["email"]:
-        return
-    if state["is_mail_important"] and state["is_response_needed"]:
-        email_data = state["email"]
-        messages = [
-            SystemMessage(content=GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT),
-            HumanMessage(content=f"{email_data}"),
-            HumanMessage(content=f"Mail style :{state['response_format']}"),
-        ]
-        draft_response = llm_model.invoke(messages).content.lower().strip()
+    email_data = state["email"]
+    messages = [
+        SystemMessage(content=GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT),
+        HumanMessage(content=f"{email_data}"),
+        HumanMessage(content=f"Mail style :{state['response_format']}"),
+    ]
+    draft_response = llm_model.invoke(messages).content.lower().strip()
 
-        store.put(state["namespace_for_memory"], "draft_response", draft_response)
+    namespace_for_memory = state["namespace_for_memory"]
+    mail_id: str = state["current_mail_id"]
+    data_list: list = store.get(namespace_for_memory, key="data")
 
-        return {"response_email_draft": draft_response}
+    if data_list != None:
+        data_list: list = data_list.value
+        for i in range(len(data_list)):
+            if data_list[i]["id"] == mail_id:
+                data_list[i]["draft_response"] = draft_response
+                break
+
+    store.put(
+        namespace=namespace_for_memory,
+        key="data",
+        value=data_list,
+    )
+
+    return {"response_email_draft": draft_response}

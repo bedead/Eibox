@@ -8,9 +8,9 @@ class EmailState(TypedDict):
 
     namespace_for_memory: tuple
 
+    current_mail_id: str
     email: Dict[str, Any]  # Email data read from JSON file (One at a time)
     is_mail_important: Optional[bool]
-    email_summary: Optional[str]
     is_response_needed: Optional[bool]
     response_format: Optional[str]
     response_email_draft: Optional[str]  # Initial Draft response

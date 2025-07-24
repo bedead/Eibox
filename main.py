@@ -1,5 +1,6 @@
 import asyncio
 from core.agents.chatbot_agent import ChatAgent  # adjust the import as needed
+from core.agents.email_agent import EmailAgent, EmailState
 from langchain_core.messages import AIMessage, AIMessageChunk
 
 from core.job_scheduler.jobs import (
@@ -28,7 +29,17 @@ async def main():
                     print(f"AI: {message_chunk.content}")
 
 
+def email_agent():
+    # Example usage of the email agent
+    EmailAgent.invoke(
+        input=EmailState(),
+        config={"configurable": {"thread_id": "test_thread", "user_id": "satyam"}},
+        # debug=True,
+    )
+
+
 from core.storage.setup import db_store
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # asyncio.run(main())
+    email_agent()
