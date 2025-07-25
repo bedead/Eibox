@@ -19,7 +19,7 @@ from langchain.chat_models import init_chat_model
 
 
 llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
-gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
+# gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
 
 
 def get_gmail_toolkit(
@@ -29,8 +29,14 @@ def get_gmail_toolkit(
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
+    # creating namespace for storage
+    user_id = config["configurable"].get("user_id", "test01")
+    thread_id = config["configurable"].get("thread_id", "test_thread")
+    namespace_for_memory = (user_id, thread_id, "emails")
+
     # data = gmail_tool.start()
 
+    # dummy mail data
     gmail = {
         "id": "17f3a12b2e6c9a5e",
         "subject": "URGENT: Immediate Action Required on Your Internship Application",
@@ -41,36 +47,24 @@ def get_gmail_toolkit(
         "snippet": "We reviewed your internship application and require additional documents to process...",
     }
 
-    # creating namespace for storage
-    user_id = config["configurable"].get("user_id", "test01")
-    thread_id = config["configurable"].get("thread_id", "test_thread")
-    namespace_for_memory = (user_id, thread_id, "emails")
-
     # fetching data from storage if available
-    data_list: list = store.get(namespace_for_memory, key="data")
-    unread_mails: int = store.get(namespace_for_memory, key="unread_mails")
+    data_list = store.get(namespace_for_memory, key="data")
+    unread_mails = store.get(namespace_for_memory, key="unread_mails")
+
+    # Extract values or set defaults
+    data_list: list = data_list.value if data_list else []
+    unread_mails: int = unread_mails.value if unread_mails else 0
 
     # Debug: printing the data fetched from storage
-    print(f"Data list from store: {data_list.value if data_list else None}")
-    print(f"Unread mails from store: {unread_mails.value if unread_mails else None}")
+    print(f"Data list from store: {data_list}")
+    print(f"Unread mails from store: {unread_mails}")
 
-    # processing if data not available
-    if not data_list:
-        data_list = []
-    if not unread_mails:
-        unread_mails = 0
+    # Update in-memory, then write back once
+    data_list.append(gmail)
+    unread_mails += 1
 
-    # adding new updated data to the storage
-    if not isinstance(data_list, list):
-        store.put(namespace_for_memory, key="data", value=data_list.value + [gmail])
-    else:
-        store.put(namespace_for_memory, key="data", value=data_list + [gmail])
-    if not isinstance(unread_mails, int):
-        store.put(
-            namespace_for_memory, key="unread_mails", value=unread_mails.value + 1
-        )
-    else:
-        store.put(namespace_for_memory, key="unread_mails", value=unread_mails + 1)
+    store.put(namespace_for_memory, key="data", value=data_list)
+    store.put(namespace_for_memory, key="unread_mails", value=unread_mails)
 
     # return Command(update={"email": gmail_tool.get_mails()[0]})
     return Command(
@@ -143,14 +137,14 @@ def generate_draft_response(state: EmailState, store: BaseStore):
 
     namespace_for_memory = state["namespace_for_memory"]
     mail_id: str = state["current_mail_id"]
-    data_list: list = store.get(namespace_for_memory, key="data")
+    data_list = store.get(namespace_for_memory, key="data")
+    data_list: list = data_list.value if data_list else []
 
-    if data_list != None:
-        data_list: list = data_list.value
-        for i in range(len(data_list)):
-            if data_list[i]["id"] == mail_id:
-                data_list[i]["draft_response"] = draft_response
-                break
+    # Update draft_response for the correct mail
+    for mail in data_list:
+        if mail["id"] == mail_id:
+            mail["draft_response"] = draft_response
+            break
 
     store.put(
         namespace=namespace_for_memory,
