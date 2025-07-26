@@ -1,4 +1,5 @@
 from textwrap import dedent
+from typing import List, Dict, Any
 from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
@@ -7,8 +8,9 @@ from langgraph.types import Command
 from langgraph.store.base import BaseStore
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
+from langchain.chat_models import init_chat_model
 from core.storage.setup import db_store
-from core.agents.chatbot_agent.bigtool_agent import agent
+from core.agents.chatbot_agent.tools import all_tools
 
 graph_builder = StateGraph(ChatbotState)
 available_models: dict = {
@@ -50,14 +52,34 @@ available_models: dict = {
         "provider": "google_genai",
     },
 }
+llm = init_chat_model(model="google_genai:gemini-2.5-pro", temperature=0.45)
+model_with_tools = llm.bind_tools(all_tools)
 
 
 def chatbot(state: ChatbotState, store: BaseStore) -> Command:
+    namespace: tuple = state["namespace_for_memory"]
+    new_element = ("emails",)
+    updated_namespace = namespace + new_element
+    # fetching data from storage if available
+    mail_data_list = store.get(namespace=updated_namespace, key="data")
+    unread_mails = store.get(namespace=updated_namespace, key="unread_mails")
 
-    mail = store.get(namespace=state["namespace_for_memory"], key="mail")
-    draft_response = store.get(
-        namespace=state["namespace_for_memory"], key="draft_response"
+    # Extract values or set defaults
+    mail_data_list: List[Dict[str, Any]] = (
+        mail_data_list.value if mail_data_list else []
     )
+    unread_mails: int = unread_mails.value if unread_mails else 0
+
+    # Debug: printing the data fetched from storage
+    # print(f"Mail data list from store: {mail_data_list}")
+    # print(f"Unread mails from store: {unread_mails}")
+
+    unread_mail_data_list = []
+    for i in mail_data_list:
+        if i.get("unread"):
+            # print(f"Skipping read mail: {i.get('unread')}")
+            unread_mail_data_list.append(i)
+    print(f"Unread mail data list: {unread_mail_data_list}")
 
     system_instruction = dedent(
         """
@@ -80,20 +102,13 @@ def chatbot(state: ChatbotState, store: BaseStore) -> Command:
         <mail_data>
         This email data has been received via a background task — the user is not yet aware of it.
 
-        New Email Details:
-        - Sender: {mail_sender}
-        - Subject: {mail_subject}
-        - Body: {mail_body}
-        - Date: {mail_date}
-        - Draft Response Prepared: {draft_response}
+        unread_mails: {unread_mails}
+        all_mails_data: {mail_data_list}
         </mail_data>
         """
     ).format(
-        mail_sender=mail.value.get("sender") if mail else None,
-        mail_subject=mail.value.get("subject") if mail else None,
-        mail_body=mail.value.get("body") if mail else None,
-        mail_date=mail.value.get("date") if mail else None,
-        draft_response=draft_response.value if draft_response else None,
+        unread_mails=unread_mails,
+        mail_data_list=unread_mail_data_list,
     )
 
     messages = [
@@ -108,18 +123,17 @@ def chatbot(state: ChatbotState, store: BaseStore) -> Command:
     #         }
     #     },
     # )
-    message = agent.invoke({"messages": messages})
+    message = model_with_tools.invoke(messages)
     # print(f"messages: {messages}")
     if isinstance(message, dict):
         message = message.get("messages")
         message = message[-1] if message else None
-    print(f"message: {message}")
     return Command(update={"messages": [message]})
 
 
 def set_initial_model(state: ChatbotState, store: BaseStore, config: RunnableConfig):
-    user_id = config["configurable"].get("user_id", "1")
-    thread_id = config["configurable"].get("thread_id", "test")
+    user_id = config["configurable"].get("user_id", "satyam")
+    thread_id = config["configurable"].get("thread_id", "test_thread")
     namespace_for_memory = (user_id, thread_id)
 
     return {
@@ -130,15 +144,15 @@ def set_initial_model(state: ChatbotState, store: BaseStore, config: RunnableCon
 graph_builder.add_node("set_model", set_initial_model)
 graph_builder.add_node("chatbot", chatbot)
 
-# tool_node = ToolNode(tools=tool_registry)
-# graph_builder.add_node("tools", tool_node)
+tool_node = ToolNode(tools=all_tools)
+graph_builder.add_node("tools", tool_node)
 
 graph_builder.add_edge(START, "set_model")
 graph_builder.add_edge("set_model", "chatbot")
-# graph_builder.add_conditional_edges(
-#     "chatbot",
-#     tools_condition,
-# )
-# graph_builder.add_edge("tools", "chatbot")
+graph_builder.add_conditional_edges(
+    "chatbot",
+    tools_condition,
+)
+graph_builder.add_edge("tools", "chatbot")
 
 graph = graph_builder.compile(checkpointer=MemorySaver(), store=db_store)

@@ -19,7 +19,7 @@ async def main():
 
         async for chunk in ChatAgent.astream(
             input={"messages": [{"role": "user", "content": user_input}]},
-            config={"configurable": {"thread_id": "test", "user_id": "satyam"}},
+            config={"configurable": {"thread_id": "test_thread", "user_id": "satyam"}},
             stream_mode="messages",
             debug=True,
         ):
@@ -41,5 +41,5 @@ def email_agent():
 from core.storage.setup import db_store
 
 if __name__ == "__main__":
-    # asyncio.run(main())
-    email_agent()
+    asyncio.run(main())
+    # email_agent()

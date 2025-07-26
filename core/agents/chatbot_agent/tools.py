@@ -10,10 +10,11 @@ from typing import List, Optional
 from langchain_core.tools import tool
 
 
+# Todo: add more util tools
 @tool
 def get_userdetails_tool(config: RunnableConfig):
     """
-    Retrieves the user ID and thread ID from the AI agent's runtime configuration.
+    Retrieves the (user ID/name of user) and thread ID from the AI agent's runtime configuration.
 
     This tool is typically used to identify the current user and their associated chat thread
 
@@ -162,13 +163,3 @@ all_tools = [
     get_userdetails_tool,
     search_gmails_tool,
 ]
-
-# Store metadata for each tool
-# for tool_id, tool in tool_registry.items():
-#     store.put(
-#         ("tools",),  # Namespace
-#         tool_id,  # Key
-#         {
-#             "description": f"{tool.name}: {tool.description}",
-#         },
-#     )
