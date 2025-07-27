@@ -52,7 +52,7 @@ available_models: dict = {
         "provider": "google_genai",
     },
 }
-llm = init_chat_model(model="google_genai:gemini-2.5-pro", temperature=0.45)
+llm = init_chat_model(model="google_genai:gemini-2.0-flash", temperature=0.45)
 model_with_tools = llm.bind_tools(all_tools)
 
 
@@ -80,6 +80,7 @@ def chatbot(state: ChatbotState, store: BaseStore) -> Command:
             # print(f"Skipping read mail: {i.get('unread')}")
             unread_mail_data_list.append(i)
     print(f"Unread mail data list: {unread_mail_data_list}")
+    print(f"Unread mails: {unread_mails}")
 
     system_instruction = dedent(
         """

@@ -56,8 +56,8 @@ def get_gmail_toolkit(
     unread_mails: int = unread_mails.value if unread_mails else 0
 
     # Debug: printing the data fetched from storage
-    print(f"Data list from store: {data_list}")
-    print(f"Unread mails from store: {unread_mails}")
+    # print(f"Data list from store: {data_list}")
+    # print(f"Unread mails from store: {unread_mails}")
 
     # Update in-memory, then write back once
     data_list.append(gmail)

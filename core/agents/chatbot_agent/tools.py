@@ -1,4 +1,3 @@
-import uuid
 from apscheduler.job import Job
 from core.gmail.gmail_toolkit import GmailToolKit
 from core.job_scheduler.jobs import (
