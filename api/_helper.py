@@ -1,7 +1,9 @@
+import hashlib
 from apscheduler.job import Job
+import asyncio
 
 
-def job_to_dict(job: Job) -> dict:
+def _job_to_dict(job: Job) -> dict:
     """
     Convert an APScheduler Job object to a dictionary representation.
     """
@@ -21,7 +23,7 @@ def job_to_dict(job: Job) -> dict:
     }
 
 
-def job_to_str(job: Job) -> str:
+def _job_to_str(job: Job) -> str:
     """
     Convert an APScheduler Job object to a str representation.
     """
@@ -29,7 +31,10 @@ def job_to_str(job: Job) -> str:
     return "".join(f"{key} : {value}" for key, value in result.items())
 
 
-import asyncio
+def _hash_password(password: str) -> str:
+    """Very basic hash, for demonstration only. Use bcrypt or Argon2 in production."""
+    return hashlib.sha256(password.encode()).hexdigest()
+
 
 
 async def _to_async_gen(sync_gen):
