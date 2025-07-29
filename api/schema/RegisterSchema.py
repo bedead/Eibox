@@ -2,7 +2,12 @@ from typing import Optional
 from pydantic import Field, BaseModel, EmailStr
 
 
-class UserSchema(BaseModel):
+class RegisterSchema(BaseModel):
+    id: str = Field(description="The unique identifier of the user")
+    account_created: str = Field(
+        description="The date and time when the user account was created"
+    )
+    # account_updated: str = Field(description="The date and time when the user account was last updated")
     username: str = Field(description="The username of the user")
     full_name: Optional[str] = Field(description="The full name of the user")
     email: Optional[EmailStr] = Field(description="The email address of the user")
