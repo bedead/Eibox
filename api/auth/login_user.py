@@ -10,7 +10,7 @@ def login_user(user: LoginSchema, namespace_for_memory: tuple):
     """
     # Construct the user key based on username and email
     # Email is optional, so we handle it accordingly
-    user_key = f"user:{user.username.lower()}"
+    user_key = f"user-auth:{user.username.lower()}"
     try:
         data = db_store.get(namespace=namespace_for_memory, key=user_key)
 
