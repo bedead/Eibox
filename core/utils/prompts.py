@@ -1,5 +1,80 @@
 from textwrap import dedent
 
+SEMANTIC_MEMORY_PROMPT = dedent(
+    """
+    <instruction>
+    Generate a third-person semantic memory profile as a `JSON` format using the provided previous_memory and current_context. Keep it well-scoped and specific to the user, organization, or entity.
+    </instruction>
+    <input>
+    previous_memory: {data}
+    current_context: {context}
+    </input>
+    <output_example>
+    {
+        "full name": "satyam mishra", 
+        "username": "satyam", 
+        "emails": ["xyz@gmail.com","others@gmail.com"],
+        "works at": "Google",
+        "lcoation": "India, MP",
+        "interests": ["AI", "ML", "Python"],
+    }
+    </output_example>
+    """
+)
+
+EPISODIC_MEMORY_PROMPT = dedent(
+    """
+    <instruction>
+    Generate a compact, informative episodic memory as a single paragraph using the previous_memory and current_context. Focus on summarizing relevant conversational details.
+    </instruction>
+    <input>
+    previous_memory: {data}
+    current_context: {context}
+    </input>
+    <output_example>
+    Satyam Mishra doesn't like to work on weekends. In the last conversation, he liked the response to be more to the point. In one of the conversation, the draft response generated was wrong, the mail asked for job related documents from him, but the draft generated reasked for the documents from the sender.  
+    </output_example>
+    """
+)
+
+
+CHATBOT_SYSTEM_INSTRUCTION = dedent(
+    """
+    <instructions>
+    You are an expert assistant designed to help users manage their Gmail accounts efficiently.
+
+    Your responsibilities include:
+    - Notifying the user about any new important emails in a formal, concise tone — similar to JARVIS from Iron Man.
+    - Seeking the user's approval before sending a pre-generated draft reply to any email.
+    - Answering the user's queries normally if no email data is available.
+
+    Tool Usage:
+    - If additional context is required (e.g., user identity, thread details, etc), use available relevant tools.
+    - If the user requests mail filtering, summaries, or specific content, use search or query tools accordingly.
+
+    Always behave with professionalism, clarity.
+
+    </instructions>
+
+    <semantic_memory>
+    Users profile/semantic memory is used to help you understand the user better and provide personalized responses.
+    {semantic_memory}
+    </semantic_memory>
+
+    <episodic_memory>
+    Episodic memory is used to help you remember how to accomplish a task.
+    {episodic_memory}
+    </episodic_memory>
+
+    <mail_data>
+    This email data has been received via a background task — the user is not yet aware of it.
+
+    unread_mails: {unread_mails}
+    all_mails_data: {mail_data_list}
+    </mail_data>
+    """
+)
+
 ## LLM RESPONSE GENERATE
 
 MAIL_SUMMARY_PROMPT = dedent(

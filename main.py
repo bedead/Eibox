@@ -21,7 +21,7 @@ async def main():
             input={"messages": [{"role": "user", "content": user_input}]},
             config={"configurable": {"thread_id": "test_thread", "user_id": "satyam"}},
             stream_mode="messages",
-            debug=True,
+            # debug=True,
         ):
             if isinstance(chunk, tuple):
                 message_chunk, metadata = chunk

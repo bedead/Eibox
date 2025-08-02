@@ -8,11 +8,11 @@ class ChatbotState(TypedDict):
     """
 
     # User/Session management attribute
-    namespace_for_memory: tuple
+    namespace_for_gmail: tuple
 
-    # Current model management
-    current_model_name: str
-    current_model_provider: str
+    # contextual information
+    semantic_memory: Optional[str]
+    episodic_memory: Optional[str]
 
     # Tracking workflow message history
     messages: Annotated[list, add_messages]
