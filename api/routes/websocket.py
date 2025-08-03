@@ -25,7 +25,7 @@ async def websocket_endpoint(websocket: WebSocket, thread_id: str):
         await websocket.close()
 
 
-def call_graph(user_input: str, user_id: str, thread_id: str, config: RunnableConfig):
+def call_graph(user_input: str, user_id: str, thread_id: str):
     # print(type(user_input))
     for chunk in ChatAgent.stream(
         input={
@@ -37,7 +37,10 @@ def call_graph(user_input: str, user_id: str, thread_id: str, config: RunnableCo
     ):
         if isinstance(chunk, tuple):
             message_chunk, metadata = chunk
-            if isinstance(message_chunk, AIMessageChunk):
+            if (
+                isinstance(message_chunk, AIMessageChunk)
+                and metadata["langgraph_node"] == "chatbot"
+            ):
                 yield message_chunk.content
 
 
@@ -46,11 +49,10 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str, thread_id: str)
     await websocket.accept()
     # job = start_email_scheduler_job(user_id=user_id, thread_id=thread_id, interval=30)
     try:
-        config = RunnableConfig(configurable={"thread_id": thread_id})
         while True:
             message = await websocket.receive_text()
             ai_message_gen = call_graph(
-                user_input=message, user_id=user_id, thread_id=thread_id, config=config
+                user_input=message, user_id=user_id, thread_id=thread_id
             )
             sent = False
             async for chunk in _to_async_gen(ai_message_gen):
