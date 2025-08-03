@@ -156,9 +156,101 @@ def search_gmails_tool(
     )
 
 
+@tool
+def get_current_dateandtime():
+    """
+    Returns the current date and time in ISO 8601 format.
+
+    This function is useful for logging or timestamping events in a standardized way.
+
+    Returns:
+        str: The current date and time as an ISO 8601 formatted string.
+    """
+    from datetime import datetime
+
+    return datetime.now().isoformat()
+
+
+@tool
+def get_day_of_week() -> str:
+    """
+    Returns the current day of the week (e.g., Monday, Tuesday).
+
+    Useful for scheduling tasks or contextualizing events based on the weekday.
+
+    Returns:
+        str: The current day of the week.
+    """
+    from datetime import datetime
+
+    return datetime.now().strftime("%A")
+
+
+@tool
+def get_day_of_month() -> int:
+    """
+    Returns the current day of the month as an integer.
+
+    Useful for monthly routines, bill reminders, or date-based triggers.
+
+    Returns:
+        int: The current day of the month (1-31).
+    """
+    from datetime import datetime
+
+    return datetime.now().day
+
+
+@tool
+def get_day_of_year() -> int:
+    """
+    Returns the current day of the year as an integer (1-366).
+
+    Useful for progress tracking or seasonal calculations.
+
+    Returns:
+        int: The current day of the year.
+    """
+    from datetime import datetime
+
+    return int(datetime.now().strftime("%j"))
+
+
+@tool
+def get_week_number() -> int:
+    """
+    Returns the ISO week number of the current year (1-53).
+
+    Useful for weekly planning and organization.
+
+    Returns:
+        int: The current ISO week number.
+    """
+    from datetime import datetime
+
+    return datetime.now().isocalendar().week
+
+
+@tool
+def is_weekend() -> bool:
+    """
+    Checks whether today is a weekend (Saturday or Sunday).
+
+    Useful for determining off-days or adjusting behavior based on work schedule.
+
+    Returns:
+        bool: True if today is Saturday or Sunday, False otherwise.
+    """
+    from datetime import datetime
+
+    return datetime.now().weekday() >= 5
+
+
 all_tools = [
     start_email_scheduler_job_tool,
     delete_email_scheduler_job_tool,
     get_userdetails_tool,
     search_gmails_tool,
+    get_current_dateandtime,
+    is_weekend,
 ]
