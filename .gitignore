@@ -1,4 +1,5 @@
-.env
+.env.dev
+.env.prod
 token.pickle
 creds.json
 emails.json
