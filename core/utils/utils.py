@@ -14,7 +14,11 @@ def get_google_gemini_key() -> str | None:
 
 def get_redis_store_host() -> str | None:
     """Get the redis store host endpoint with port."""
-    return os.environ.get("REDIS_STORE_HOST")
+    return os.environ.get("LOCAL_REDIS_STORE_HOST")
+
+
+def get_cloud_redis_store_host() -> str | None:
+    return os.environ.get("CLOUD_REDIS_STORE_HOST")
 
 
 def get_groq_key():
