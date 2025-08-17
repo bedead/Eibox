@@ -1,9 +1,9 @@
 [project]
-name = "AmaAI"
+name = "Eibox"
 version = "0.1.0"
-description = "AmaAI is a intelligent system. This assistant leverages AI to read, categorize, prioritize, and respond to emails, ensuring efficient email management. Our goal is to reduce email overload and help users focus on important messages while automating routine tasks."
+description = "Eibox is a intelligent system. This assistant leverages AI to read, categorize, prioritize, and respond to emails, ensuring efficient email management. Our goal is to reduce email overload and help users focus on important messages while automating routine tasks."
 authors = [
-    {name = "Satyam Mishra",email = "satyammishra9050@gmail.com"}
+    {name = "Satyam Mishra"}
 ]
 license = {text = "MIT License"}
 readme = "README.md"

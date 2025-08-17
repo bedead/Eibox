@@ -1,4 +1,5 @@
-.env*
+.env
+.env.secret
 token.pickle
 creds.json
 emails.json
@@ -11,6 +12,8 @@ nextagents
 .vscode
 .qodo
 redis_connection.json
+
+thought_dump.txt
 
 # Ignore Python cache files
 __pycache__/
