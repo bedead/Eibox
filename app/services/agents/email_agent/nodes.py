@@ -7,7 +7,7 @@ from app.utils._prompts import (
 from app.services.agents.email_agent.states import EmailState
 from langgraph.graph import END
 from langgraph.types import interrupt, Command
-from app.services.gmail import GmailToolKit
+from app.services.gmail.gmail_toolkit import GmailToolKit
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore
 

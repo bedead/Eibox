@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from app.utils._api_helper import _job_to_dict
-from api.schema.CronJobSchema import CronJobSchema
-from core.job_scheduler.jobs import (
+from app.schemas.cron_job import CronJobSchema
+from app.services.job_scheduler.jobs import (
     start_email_scheduler_job,
     delete_email_scheduler_job,
 )
