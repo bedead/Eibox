@@ -5,7 +5,6 @@ from app.schemas.login import LoginSchema
 from app.db.repos.auth.register_user import register_user as ru
 from app.db.repos.auth.login_user import login_user as lu
 from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
-from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from dotenv import load_dotenv
 
 
@@ -16,7 +15,6 @@ router = APIRouter()
 namespace_for_memory = ("auth", "user")
 
 
-# TODO: #11 find and fix the problem (why the Google gmail auth token data is not saving in db)
 @router.post("/oauth_gmail_access_token/v1")
 def handle_google_oauth(token: GoogleAccessTokens):
     try:

@@ -3,49 +3,55 @@ import logging
 import os
 from typing import Optional
 from dotenv import load_dotenv
+from app.core.config import settings
 
 load_dotenv()
 
 
-def _basic_config() -> None:
-    # e.g. [2023-10-05 14:12:26 - ama.groq:818 - DEBUG] HTTP Request: POST http://127.0.0.1:4010/foo/bar "200 OK"
-    logging.basicConfig(
-        format="[%(asctime)s - %(name)s:%(lineno)d - %(levelname)s] %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        encoding="utf-8",
-    )
-
-
-def _get_log_filename() -> str:
+def _get_log_filename(log_folder_name: str) -> str:
     """Generate a valid log filename using current timestamp"""
-    timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    return f"./{os.environ.get('LOG_FOLDER_NAME')}/{timestamp}.log"
+    os.makedirs(log_folder_name, exist_ok=True)  # ensure folder exists
+    timestamp = datetime.now().strftime("DATE-%Y-%m-%d_TIME-%H-%M-%S")
+    return os.path.join(log_folder_name, f"{timestamp}.log")
 
 
 def setup_logging(
-    log_type: Optional[str] = None, log_file: Optional[str] = None
+    log_type: Optional[str] = None, log_folder_name: Optional[str] = None
 ) -> logging.Logger:
-    logger: logging.Logger = logging.getLogger()
-    logger.propagate = False  # Prevents double logging in root logger
-    _basic_config()
+    # Clear duplicate handlers
+    root_logger = logging.getLogger("Eibox")
 
-    env = log_type or os.environ.get("LOG_TYPE")
-    print(f"log env: {env}")
-    file_path = _get_log_filename()
-    fh = logging.FileHandler(filename=file_path)
+    # Formatter (now using module name instead of root)
+    formatter = logging.Formatter(
+        fmt="[%(asctime)s - %(name)s:%(filename)s:%(lineno)d - %(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # File handler
+    file_path = _get_log_filename(log_folder_name)
+    fh = logging.FileHandler(file_path, encoding="utf-8")
+    fh.setFormatter(formatter)
+
+    # Console handler
     ch = logging.StreamHandler()
+    ch.setFormatter(formatter)
 
-    if env == "debug":
-        logger.setLevel(logging.DEBUG)
-        # create file handler which logs even debug messages
+    if log_type == "debug":
         fh.setLevel(logging.DEBUG)
         ch.setLevel(logging.DEBUG)
-    elif env == "info":
-        logger.setLevel(logging.INFO)
-        fh.setLevel(logging.DEBUG)
+    else:
+        fh.setLevel(logging.DEBUG)  # keep full logs in file
         ch.setLevel(logging.INFO)
 
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    root_logger.addHandler(fh)
+    root_logger.addHandler(ch)
 
-    return logger
+    # Only for initial confirmation
+    root_logger.info(f"Logging initialized with level={log_type}, file={file_path}")
+
+    return root_logger
+
+
+logger = setup_logging(
+    log_type=settings.LOG_TYPE, log_folder_name=settings.LOG_FOLDER_NAME
+)

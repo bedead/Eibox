@@ -4,7 +4,7 @@ token.pickle
 web_creds.json
 emails.json
 venv
-logs/
+log_dump
 *.log
 token.json
 .langgraph_api

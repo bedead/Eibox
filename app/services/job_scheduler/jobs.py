@@ -3,18 +3,17 @@ from datetime import datetime
 from app.services.agents.chatbot_agent import ChatbotState
 from app.services.agents.email_agent import EmailAgent, EmailState
 from langchain_core.runnables import RunnableConfig
-
-
+from app.core.logging import logger
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.job import Job
 
 
 def fetch_email_data(user_id: str, thread_id: str, config: RunnableConfig):
-    print(f"[{datetime.now()}] Running email agent job...")
+    logger.info(f"[{datetime.now()}] Running email agent job...")
     config["configurable"]["user_id"] = user_id
     config["configurable"]["thread_id"] = thread_id
     result = EmailAgent.invoke(input=EmailState(), config=config)
-    print(result)
+    logger.info(result)
 
     # return result
 
@@ -41,5 +40,5 @@ def delete_email_scheduler_job(user_id: str, thread_id: str):
         return {"status": "success"}
     except Exception as e:
         e = f"Exception occured : {e}"
-        print(e)
+        logger.error(e, exc_info=True)
         return {"status": e}

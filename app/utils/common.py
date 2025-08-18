@@ -2,6 +2,7 @@ import json
 import re
 from dotenv import load_dotenv
 import os
+from app.core.logging import logger
 
 
 load_dotenv()
@@ -56,7 +57,7 @@ def clean_and_parse_ai_output(text: str):
         parsed = json.loads(cleaned)
         return parsed
     except json.JSONDecodeError as e:
-        print("JSON parsing error:", e)
+        logger.error(f"JSON parsing error: {e}", exc_info=True)
         return None
 
 

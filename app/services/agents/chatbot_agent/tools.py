@@ -9,7 +9,7 @@ from typing import List, Optional
 from langchain_core.tools import tool
 
 
-# Todo: add more util tools
+# TODO: add more util tools
 @tool
 def get_userdetails_tool(config: RunnableConfig):
     """

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket
 from pydantic import BaseModel
 from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from dotenv import load_dotenv
@@ -26,3 +26,17 @@ def get_google_account(token: GoogleAccountRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save tokens: {str(e)}")
+
+
+@router.websocket("/chatbot/v1/{username}/{thread_id}")
+async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str):
+    await websocket.accept()
+    try:
+        while True:
+            message = await websocket.receive_text()
+            await websocket.send_text(f"AI : {message} - from {username}")
+
+    except Exception as e:
+        await websocket.send_text(f"[ERROR] {str(e)}")
+    finally:
+        await websocket.close()

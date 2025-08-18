@@ -10,7 +10,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from datetime import datetime, timedelta
-import logging
+from app.core.logging import logger
 from google.oauth2.credentials import Credentials
 from pydantic import FilePath
 
@@ -24,6 +24,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 # TODO: #10 Remove auto GmailToolKit class trigger to generate token.pickle file, as the token is retrived from db and before starting the agent the tokens are saved in backend session
 class GmailToolKit:
@@ -64,7 +65,7 @@ class GmailToolKit:
         self.monitor_thread = None
         self.paused: bool = False
         self.last_check_time = None
-        self.logger: logging.Logger = logging.getLogger(__name__)
+        self.logger = logger
         self.authenticate()
         self.logger.debug("GmailToolKit initialized.")
 
@@ -85,7 +86,7 @@ class GmailToolKit:
                     creds = pickle.load(token)
                 self.logger.debug("Token file loaded successfully.")
             except (pickle.PickleError, EOFError, FileNotFoundError) as e:
-                self.logger.error(f"Error loading token file: {str(e)}")
+                self.logger.error(f"Error loading token file: {str(e)}", exc_info=True)
                 # Remove corrupted token file
                 try:
                     os.remove(self.token_file)
@@ -94,7 +95,9 @@ class GmailToolKit:
                     pass
                 creds = None
             except Exception as e:
-                self.logger.error(f"Unexpected error loading token file: {str(e)}")
+                self.logger.error(
+                    f"Unexpected error loading token file: {str(e)}", exc_info=True
+                )
                 creds = None
 
         # Check if credentials are valid
@@ -105,7 +108,9 @@ class GmailToolKit:
                     creds.refresh(Request())
                     self.logger.debug("Token refreshed successfully.")
                 except Exception as e:
-                    self.logger.error(f"Error refreshing token: {str(e)}")
+                    self.logger.error(
+                        f"Error refreshing token: {str(e)}", exc_info=True
+                    )
                     self.logger.debug(
                         "Failed to refresh token, initiating new OAuth flow..."
                     )
@@ -125,7 +130,9 @@ class GmailToolKit:
                     creds = self.get_available_port(flow=flow)
                     self.logger.debug("New token generated successfully.")
                 except Exception as e:
-                    self.logger.error(f"Error during OAuth flow: {str(e)}")
+                    self.logger.error(
+                        f"Error during OAuth flow: {str(e)}", exc_info=True
+                    )
                     raise RuntimeError(
                         f"Failed to authenticate with Gmail API: {str(e)}"
                     )
@@ -136,7 +143,7 @@ class GmailToolKit:
                     pickle.dump(creds, token)
                 self.logger.debug("Token saved to pickle file.")
             except Exception as e:
-                self.logger.error(f"Error saving token file: {str(e)}")
+                self.logger.error(f"Error saving token file: {str(e)}", exc_info=True)
                 # Continue execution even if saving fails
 
         # Build the service
@@ -144,7 +151,7 @@ class GmailToolKit:
             self.service = build("gmail", "v1", credentials=creds)
             self.logger.debug("Authenticated successfully with Gmail API.")
         except Exception as e:
-            self.logger.error(f"Error building Gmail service: {str(e)}")
+            self.logger.error(f"Error building Gmail service: {str(e)}", exc_info=True)
             raise RuntimeError(f"Failed to build Gmail service: {str(e)}")
 
         # Verify the service works by making a test call
@@ -153,7 +160,9 @@ class GmailToolKit:
             self.service.users().getProfile(userId="me").execute()
             self.logger.debug("Gmail API connection verified.")
         except Exception as e:
-            self.logger.error(f"Gmail API connection test failed: {str(e)}")
+            self.logger.error(
+                f"Gmail API connection test failed: {str(e)}", exc_info=True
+            )
             raise RuntimeError(f"Gmail API connection failed: {str(e)}")
 
     def get_available_port(
@@ -396,7 +405,7 @@ class GmailToolKit:
             return emails
 
         except Exception as e:
-            self.logger.error(f"Error fetching emails: {str(e)}")
+            self.logger.error(f"Error fetching emails: {str(e)}", exc_info=True)
             return []
 
     def background_monitor(self, max_results, date):
@@ -417,7 +426,9 @@ class GmailToolKit:
                 self.logger.debug(f"Going to sleep for {self.interval} seconds...")
                 time.sleep(self.interval)
             except Exception as e:
-                self.logger.error(f"Error in background monitoring: {str(e)}")
+                self.logger.error(
+                    f"Error in background monitoring: {str(e)}", exc_info=True
+                )
 
     def start(self):
         """Start monitoring emails either in background thread or directly."""
@@ -448,7 +459,7 @@ class GmailToolKit:
 
                 return self.recent_emails
             except Exception as e:
-                self.logger.error(f"Error in monitoring: {str(e)}")
+                self.logger.error(f"Error in monitoring: {str(e)}", exc_info=True)
             self.logger.debug("Completed single email check...")
 
     def stop(self):
@@ -510,7 +521,7 @@ class GmailToolKit:
         except Exception as e:
             status["success"] = False
             status["message"] = f"Error sending email: {str(e)}"
-            self.logger.error(f"Error sending email: {str(e)}")
+            self.logger.error(f"Error sending email: {str(e)}", exc_info=True)
             return status
 
 

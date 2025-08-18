@@ -17,6 +17,9 @@ from app.utils._prompts import (
     SEMANTIC_MEMORY_PROMPT,
 )
 from app.utils.common import clean_and_parse_ai_output
+from app.core.logging import logger
+
+
 
 graph_builder = StateGraph(ChatbotState)
 llm = init_chat_model(model="google_genai:gemini-2.0-flash", temperature=0.45)
@@ -121,8 +124,8 @@ def chatbot(state: ChatbotState, store: BaseStore) -> Command:
         if i.get("unread"):
             # print(f"Skipping read mail: {i.get('unread')}")
             unread_mail_data_list.append(i)
-    print(f"Unread mail data list: {unread_mail_data_list}")
-    print(f"Unread mails: {unread_mails}")
+    logger.info(f"Unread mail data list: {unread_mail_data_list}")
+    logger.info(f"Unread mails: {unread_mails}")
 
     system_instruction = CHATBOT_SYSTEM_INSTRUCTION.format(
         unread_mails=unread_mails,

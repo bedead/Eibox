@@ -2,8 +2,11 @@ from fastapi import HTTPException
 from app.utils._api_helper import _hash_password
 from app.schemas.login import LoginSchema
 from app.db.redis import db_store
+from app.core.logging import logger
 
 
+
+# TODO: #12 update user_key by adding user_id also, by taking optional user_id as input field.
 def login_user(user: LoginSchema, namespace_for_memory: tuple):
     """
     Log in a user with the provided user schema.
@@ -16,6 +19,7 @@ def login_user(user: LoginSchema, namespace_for_memory: tuple):
 
         # Check if user exists and password matches
         if not data or not data.value:
+            logger.info(f"404: User not found")
             raise HTTPException(status_code=404, detail="User not found")
 
         # Assuming data is a dictionary with a 'password' field
@@ -23,11 +27,13 @@ def login_user(user: LoginSchema, namespace_for_memory: tuple):
 
         # Check if the provided password matches the stored hashed password
         if data.get("password") != _hash_password(user.password):
+            logger.warning(f"401: Invalid password")
             raise HTTPException(status_code=401, detail="Invalid password")
 
     except Exception as e:
-        print(f"Login error: {e}")
+        logger.error(f"Login error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # If user exists and password matches, return success
+    logger.info(f"User logged in successfully")
     return {"success": 200, "message": "User logged in successfully", "data": data}
