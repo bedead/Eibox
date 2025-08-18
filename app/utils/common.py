@@ -58,3 +58,8 @@ def clean_and_parse_ai_output(text: str):
     except json.JSONDecodeError as e:
         print("JSON parsing error:", e)
         return None
+
+
+def get_db_gmail_account_key(user_id: str, username: str) -> str:
+    """"""
+    return f"user-gmail-accounts:{user_id}:{username}"

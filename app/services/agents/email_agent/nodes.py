@@ -17,7 +17,7 @@ from langchain.chat_models import init_chat_model
 
 
 llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
-gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
+# gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
 
 
 def get_gmail_toolkit(
@@ -32,18 +32,18 @@ def get_gmail_toolkit(
     thread_id = config["configurable"].get("thread_id", "test_thread")
     namespace_for_memory = (user_id, thread_id, "emails")
 
-    data = gmail_tool.start()
+    # data = gmail_tool.start()
 
     # dummy mail data
-    # gmail = {
-    #     "id": "17f3a12b2e6c9a5e",
-    #     "subject": "URGENT: Immediate Action Required on Your Internship Application",
-    #     "sender": "hr@companycareers.com",
-    #     "date": "2025-07-03T09:15:00Z",
-    #     "body": "Dear Satyam,\n\nWe reviewed your internship application and require additional documents to process your candidacy. Please upload your updated resume and project portfolio by 6 PM IST today. Without these, your application will not be considered further.\n\nIf you've already submitted them, kindly ignore this message.\n\nRegards,\nHR Team\nCompanyCareers",
-    #     "unread": True,
-    #     "snippet": "We reviewed your internship application and require additional documents to process...",
-    # }
+    gmail = {
+        "id": "17f3a12b2e6c9a5e",
+        "subject": "URGENT: Immediate Action Required on Your Internship Application",
+        "sender": "hr@companycareers.com",
+        "date": "2025-07-03T09:15:00Z",
+        "body": "Dear Satyam,\n\nWe reviewed your internship application and require additional documents to process your candidacy. Please upload your updated resume and project portfolio by 6 PM IST today. Without these, your application will not be considered further.\n\nIf you've already submitted them, kindly ignore this message.\n\nRegards,\nHR Team\nCompanyCareers",
+        "unread": True,
+        "snippet": "We reviewed your internship application and require additional documents to process...",
+    }
 
     # fetching data from storage if available
     data_list = store.get(namespace_for_memory, key="data")
@@ -58,7 +58,7 @@ def get_gmail_toolkit(
     # print(f"Unread mails from store: {unread_mails}")
 
     # Update in-memory, then write back once
-    data_list.append(data[0])
+    data_list.append(gmail)
     unread_mails += 1
 
     store.put(namespace_for_memory, key="data", value=data_list)

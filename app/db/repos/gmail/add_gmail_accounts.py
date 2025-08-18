@@ -1,30 +1,52 @@
+import json
 from typing import List
+
+from fastapi import HTTPException
 from app.schemas.google_access_token import GoogleAccessTokens
 from app.schemas.gmail_account import GmailAccount
 from app.db.redis import db_store
+from .save_gmail_accounts import save_gmail_account
+from app.utils.common import get_db_gmail_account_key
 
 
 def add_gmail_account(token: GoogleAccessTokens, namespace_for_memory: str):
-
     username = token.username
-    key = f"user-gmail-accounts:{username}"
+    user_id = token.user_id
+    key = get_db_gmail_account_key(user_id=user_id, username=username)
 
-    # get all the gmail accounts object data from db
-    gmail_accounts: List[GmailAccount] = db_store.get(
-        namespace=namespace_for_memory, key=key
-    )
+    try:
+        # Load existing accounts (if any)
+        raw = db_store.get(namespace=namespace_for_memory, key=key)
+        gmail_accounts: List[GmailAccount] = (
+            [GmailAccount(**item) for item in json.loads(raw.value)] if raw else []
+        )
 
-    # format current gmail account data to object
-    gaccount = GmailAccount(
-        email=token.account_email,
-        refresh_token=token.token["refreshToken"],
-        access_token=token.token["accessToken"],
-        expires_in=token.token["expiresIn"],
-        token_type=token.token["tokenType"],
-        scope=token.token["scope"],
-    )
+        # Build new GmailAccount from token
+        gaccount = GmailAccount(
+            email=token.account_email,
+            refresh_token=token.token["refreshToken"],
+            access_token=token.token["accessToken"],
+            expires_in=token.token["expiresIn"],
+            token_type=token.token["tokenType"],
+            scope=token.token["scope"].split(),  # handle string → list
+        )
 
-    # add the new account data object
-    gmail_accounts.append(gaccount)
+        # Remove existing account with the same email
+        gmail_accounts = [acc for acc in gmail_accounts if acc.email != gaccount.email]
 
-    # call save_gmail_account to save the new updated gmail accounts data
+        # Add new account
+        gmail_accounts.append(gaccount)
+
+        # Save updated accounts
+        save_gmail_account(
+            user_id=user_id,
+            username=username,
+            accounts=gmail_accounts,
+            namespace_for_memory=namespace_for_memory,
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to add gmail accounts due to error: {str(e)}",
+        )
