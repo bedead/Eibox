@@ -49,14 +49,18 @@ async def open_chat_websocket(
     data: List[GmailAccount] = get_gmail_account(
         user_id=user_id, username=username, namespace_for_memory=namespace_for_memory
     )
-
-    print(data)
+    gmail_toolkit = GmailToolKit(gmail_account=data[0])
 
     connection_key = (username, user_id)
 
     # TODO: #14 update GmailToolkit to use access_token to fetch gmail data
     # Create session object, can also add job=job
-    session = ChatSession(websocket, username, user_id, thread_id)
+    session = ChatSession(
+        websocket=websocket,
+        username=username,
+        thread_id=thread_id,
+        toolkit=gmail_toolkit,
+    )
 
     active_sessions[connection_key] = session
 

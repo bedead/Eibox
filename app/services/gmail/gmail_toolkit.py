@@ -3,61 +3,43 @@ import os
 import time
 import base64
 import threading
-import pickle
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from datetime import datetime, timedelta
-from app.core.logging import logger
 from google.oauth2.credentials import Credentials
-from pydantic import FilePath
-
-SCOPES = [
-    "https://www.googleapis.com/auth/gmail.readonly",
-    "https://www.googleapis.com/auth/gmail.modify",
-]
-
-
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+from app.core.logging import logger
+from app.schemas.gmail_account import GmailAccount
 
 
 class GmailToolKit:
     def __init__(
         self,
+        gmail_account: GmailAccount,
         run_as_thread: bool = False,
-        save_json: bool = True,
-        creds_file: FilePath = os.getenv("GCP_CREDS_FILE"),
-        token_file: FilePath = os.getenv("GCP_TOKEN_FILE"),
-        json_file: FilePath = os.getenv("GMAIL_DATA_SAVE_FILE"),
+        save_json: bool = False,
+        json_file: Optional[str] = None,
         interval: int = 5,
         max_results: int = 1,
-        date=None,
     ):
         """
         Initializes the GmailToolKit with the provided parameters and sets up the Gmail API service.
+
         Parameters:
+            gmail_account: GmailAccount - The Gmail account data containing access token
             run_as_thread: bool = False - If True, runs the email monitoring in a separate thread.
             save_json: bool = True - If True, saves the fetched emails to a JSON file.
-            creds_file: FilePath = os.getenv("GCP_CREDS_FILE") - Path to the Google API credentials file.
-            token_file: FilePath = os.getenv("GCP_TOKEN_FILE") - Path to the token file for storing OAuth tokens.
-            json_file: FilePath = os.getenv("GMAIL_DATA_SAVE_FILE") - Path to the JSON file where emails will be saved.
+            json_file: Optional[str] = None - Path to the JSON file where emails will be saved.
             interval: int = 5 - Time interval in seconds for checking new emails.
             max_results: int = 1 - Maximum number of emails to fetch in each check.
-            date: Optional[str] = None - Date filter for fetching emails in (d, m, y) format.
         """
+        self.gmail_account = gmail_account
         self.run_as_thread = run_as_thread
         self.save_json = save_json
         self.recent_emails: List = []
         self.max_results = max_results
-        self.date = date
-        self.json_file = json_file
-        self.creds_file = creds_file
-        self.token_file = token_file
+        self.json_file = (
+            json_file or f"emails_{gmail_account.email.replace('@', '_at_')}.json"
+        )
         self.interval = interval
         self.service = None
         self.monitoring_active: bool = False
@@ -66,120 +48,49 @@ class GmailToolKit:
         self.last_check_time = None
         self.logger = logger
         self.authenticate()
-        self.logger.debug("GmailToolKit initialized.")
+        self.logger.debug(f"GmailToolKit initialized for {self.gmail_account.email}.")
 
     def authenticate(self):
         """
-        Authenticate with Gmail API and initialize service.
-        Initially uses creds.json file to initiate OAuth2 flow.
-        If token.pickle exists, it loads the credentials from there.
-        If the token.pickle file does not exist, it creates a new one after successful authentication.
-        If the token.pickle file is invalid or expired, it refreshes them or prompts for re-authentication.
+        Authenticate with Gmail API using the provided access token.
         """
-        creds = None
-
-        # Load existing token if it exists
-        if os.path.exists(self.token_file):
-            try:
-                with open(self.token_file, "rb") as token:
-                    creds = pickle.load(token)
-                self.logger.debug("Token file loaded successfully.")
-            except (pickle.PickleError, EOFError, FileNotFoundError) as e:
-                self.logger.error(f"Error loading token file: {str(e)}", exc_info=True)
-                # Remove corrupted token file
-                try:
-                    os.remove(self.token_file)
-                    self.logger.debug("Corrupted token file removed.")
-                except OSError:
-                    pass
-                creds = None
-            except Exception as e:
-                self.logger.error(
-                    f"Unexpected error loading token file: {str(e)}", exc_info=True
-                )
-                creds = None
-
-        # Check if credentials are valid
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                try:
-                    self.logger.debug("Refreshing expired token...")
-                    creds.refresh(Request())
-                    self.logger.debug("Token refreshed successfully.")
-                except Exception as e:
-                    self.logger.error(
-                        f"Error refreshing token: {str(e)}", exc_info=True
-                    )
-                    self.logger.debug(
-                        "Failed to refresh token, initiating new OAuth flow..."
-                    )
-                    creds = None
-
-            # If no valid credentials, start OAuth flow
-            if not creds or not creds.valid:
-                try:
-                    if not os.path.exists(self.creds_file):
-                        raise FileNotFoundError(
-                            f"Credentials file not found: {self.creds_file}"
-                        )
-
-                    flow = InstalledAppFlow.from_client_secrets_file(
-                        self.creds_file, SCOPES
-                    )
-                    creds = self.get_available_port(flow=flow)
-                    self.logger.debug("New token generated successfully.")
-                except Exception as e:
-                    self.logger.error(
-                        f"Error during OAuth flow: {str(e)}", exc_info=True
-                    )
-                    raise RuntimeError(
-                        f"Failed to authenticate with Gmail API: {str(e)}"
-                    )
-
-            # Save the credentials
-            try:
-                with open(self.token_file, "wb") as token:
-                    pickle.dump(creds, token)
-                self.logger.debug("Token saved to pickle file.")
-            except Exception as e:
-                self.logger.error(f"Error saving token file: {str(e)}", exc_info=True)
-                # Continue execution even if saving fails
-
-        # Build the service
         try:
+            # Create credentials object from the access token
+            creds = Credentials(
+                token=self.gmail_account.access_token,
+                refresh_token=self.gmail_account.refresh_token,
+                token_uri="https://oauth2.googleapis.com/token",
+                client_id=None,  # Not needed for token-based auth
+                client_secret=None,  # Not needed for token-based auth
+                scopes=self.gmail_account.scope
+                or [
+                    "https://www.googleapis.com/auth/gmail.readonly",
+                    "https://www.googleapis.com/auth/gmail.modify",
+                ],
+            )
+
+            # Build the service
             self.service = build("gmail", "v1", credentials=creds)
-            self.logger.debug("Authenticated successfully with Gmail API.")
-        except Exception as e:
-            self.logger.error(f"Error building Gmail service: {str(e)}", exc_info=True)
-            raise RuntimeError(f"Failed to build Gmail service: {str(e)}")
+            self.logger.debug(
+                f"Authenticated successfully with Gmail API for {self.gmail_account.email}."
+            )
 
-        # Verify the service works by making a test call
-        try:
-            # Test the connection with a simple API call
-            self.service.users().getProfile(userId="me").execute()
-            self.logger.debug("Gmail API connection verified.")
+            # Verify the service works by making a test call
+            profile = self.service.users().getProfile(userId="me").execute()
+            self.logger.debug(
+                f"Gmail API connection verified. Email: {profile.get('emailAddress')}"
+            )
+
         except Exception as e:
             self.logger.error(
-                f"Gmail API connection test failed: {str(e)}", exc_info=True
+                f"Error authenticating with Gmail API: {str(e)}", exc_info=True
             )
-            raise RuntimeError(f"Gmail API connection failed: {str(e)}")
+            raise RuntimeError(f"Failed to authenticate with Gmail API: {str(e)}")
 
-    def get_available_port(
-        self, flow: InstalledAppFlow, start_port=8080, max_attempts=2
-    ):
-        for port in range(start_port, start_port + max_attempts):
-            try:
-                creds = flow.run_local_server(port=port)
-                return creds
-            except PermissionError:
-                start_port += 1
-                continue
-        raise RuntimeError("Could not find an available port")
-
-    def mark_email_as_read(self, service, message_id):
+    def mark_email_as_read(self, message_id):
         """Marks an email as read by removing the UNREAD label."""
         try:
-            service.users().messages().modify(
+            self.service.users().messages().modify(
                 userId="me",
                 id=message_id,
                 body={"removeLabelIds": ["UNREAD"]},
@@ -190,14 +101,14 @@ class GmailToolKit:
     def load_existing_emails(self):
         """Load existing emails from JSON file to avoid duplicates."""
         if os.path.exists(self.json_file):
-            with open(self.json_file, "r") as file:
-                try:
+            try:
+                with open(self.json_file, "r") as file:
                     return json.load(file)
-                except json.JSONDecodeError:
-                    self.logger.debug(
-                        "JSON Decoder Error occured while loading existing emails from JSON."
-                    )
-                    return []
+            except json.JSONDecodeError:
+                self.logger.debug(
+                    "JSON Decoder Error occurred while loading existing emails from JSON."
+                )
+                return []
         return []
 
     def save_emails_to_json(self, emails):
@@ -211,8 +122,9 @@ class GmailToolKit:
             existing_emails.extend(new_emails)
             with open(self.json_file, "w") as file:
                 json.dump(existing_emails, file, indent=4)
-
-            # print(f"Saved {len(new_emails)} new email(s) to {self.json_file}")
+            self.logger.debug(
+                f"Saved {len(new_emails)} new email(s) to {self.json_file}"
+            )
 
     def get_email_content_based_on_gmail_id(self, message_id):
         """Retrieve email content given the email ID."""
@@ -247,7 +159,8 @@ class GmailToolKit:
                 body = base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8")
 
             # Mark email as read
-            self.mark_email_as_read(self.service, message_id)
+            self.mark_email_as_read(message_id)
+
             return {
                 "id": message_id,
                 "subject": subject,
@@ -284,51 +197,7 @@ class GmailToolKit:
     ) -> List[dict]:
         """
         Fetches emails from the user's Gmail inbox using advanced search filters.
-
-        This method provides fine-grained control over Gmail search queries, allowing
-        filtering by date range, read/unread status, sender, recipient, subject,
-        attachments, labels, categories, size, and more. Internally, it constructs a
-        Gmail-compatible query string and uses the Gmail API to fetch matching messages.
-
-        Args:
-            from_date (Optional[str]): Start date in "d/m/yyyy" format to filter emails from.
-            to_date (Optional[str]): End date in "d/m/yyyy" format to filter emails up to.
-            query (Optional[str]): Custom free-text search string (e.g., "invoice OR receipt").
-            subject (Optional[str]): Filter emails that have this string in the subject.
-            sender (Optional[str]): Filter emails sent from this email address.
-            recipient (Optional[str]): Filter emails sent to this email address.
-            is_read (Optional[bool]): Set to True to filter read emails, False for unread.
-            is_starred (Optional[bool]): Set to True to only include starred emails.
-            is_important (Optional[bool]): Set to True to include only important emails.
-            has_attachment (Optional[bool]): If True, fetch only emails with attachments.
-            filename (Optional[str]): Filter emails with attachments matching this filename or extension.
-            larger_than (Optional[str]): Filter emails larger than the given size (e.g., "1M", "500K").
-            category (Optional[str]): Gmail tab category (e.g., "primary", "promotions", "social").
-            label_ids (Optional[List[str]]): List of Gmail label IDs to restrict results (e.g., ["INBOX", "UNREAD"]).
-            include_spam (bool): Whether to include emails from the spam folder.
-            include_trash (bool): Whether to include emails from the trash folder.
-            max_results (int): Maximum number of email results to fetch. Defaults to 10.
-            page_token (Optional[str]): Gmail API pagination token to fetch the next page of results.
-
-        Returns:
-            List[dict]: A list of email dictionaries containing parsed metadata and content.
-                        Each email is obtained using `self.get_email_content(message_id)`.
-
-        Raises:
-            Logs the exception and returns an empty list if any error occurs during execution.
-
-        Example:
-            emails = self.check_emails(
-                from_date="01/07/2025",
-                to_date="15/07/2025",
-                sender="billing@example.com",
-                is_read=False,
-                has_attachment=True,
-                filename="pdf",
-                max_results=5
-            )
         """
-
         try:
 
             def parse_date(date_str: str) -> str:
@@ -369,9 +238,7 @@ class GmailToolKit:
             if filename:
                 search_query += f" filename:{filename}"
             if larger_than:
-                search_query += (
-                    f" larger:{larger_than.upper()}"  # Gmail uses 1M, 1K, etc.
-                )
+                search_query += f" larger:{larger_than.upper()}"
 
             # Include spam/trash if needed
             if include_spam or include_trash:
@@ -407,7 +274,7 @@ class GmailToolKit:
             self.logger.error(f"Error fetching emails: {str(e)}", exc_info=True)
             return []
 
-    def background_monitor(self, max_results, date):
+    def background_monitor(self):
         """Background function to monitor emails periodically."""
         while self.monitoring_active:
             if self.paused:
@@ -415,9 +282,7 @@ class GmailToolKit:
                 continue
 
             try:
-                self.recent_emails: List = self.check_emails(
-                    max_results=max_results, date=date
-                )
+                self.recent_emails = self.check_emails(max_results=self.max_results)
                 if self.recent_emails and self.save_json:
                     self.save_emails_to_json(self.recent_emails)
 
@@ -442,24 +307,22 @@ class GmailToolKit:
             self.monitor_thread = threading.Thread(
                 target=self.background_monitor,
                 daemon=True,
-                args=(self.max_results, self.date),
             )
             self.monitor_thread.start()
             self.logger.debug("Started monitoring emails in background thread...")
         else:
             # Run directly in the current thread
             try:
-                self.recent_emails = self.check_emails(
-                    max_results=self.max_results, date=self.date
-                )
+                self.recent_emails = self.check_emails(max_results=self.max_results)
                 if self.recent_emails and self.save_json:
                     self.save_emails_to_json(self.recent_emails)
                 self.last_check_time = datetime.now()
-
                 return self.recent_emails
             except Exception as e:
                 self.logger.error(f"Error in monitoring: {str(e)}", exc_info=True)
-            self.logger.debug("Completed single email check...")
+                return []
+            finally:
+                self.monitoring_active = False
 
     def stop(self):
         """Stop the monitoring process."""
@@ -487,23 +350,20 @@ class GmailToolKit:
         self.logger.debug("Restarted email monitoring.")
 
     def get_mails(self):
-        """Retrieve the most recent emails.
-        Returns:
-            List of recent emails.
-        If no emails are found, returns an empty list.
-        """
+        """Retrieve the most recent emails."""
         return self.recent_emails
 
     def send_mail(self, to, subject, body) -> Dict[str, Any]:
         """
         Send an email using the Gmail API.
+
         Args:
             to (str): Recipient email address.
             subject (str): Subject of the email.
             body (str): Body content of the email.
+
         Returns:
-            status (Dict[str, Any]): A dictionary containing the success status and message.
-            {"success": bool, "message": str}
+            Dict[str, Any]: Status dictionary with success and message.
         """
         status = {}
         try:
@@ -526,6 +386,21 @@ class GmailToolKit:
 
 # Example usage
 if __name__ == "__main__":
-    tool = GmailToolKit(run_as_thread=False, max_results=5, save_json=False)
-    tool.start()
+    # Example GmailAccount data
+    gmail_account = GmailAccount(
+        email="example@gmail.com",
+        access_token="your_access_token_here",
+        refresh_token="your_refresh_token_here",
+        expires_in=3600,
+        token_type="Bearer",
+        scope=[
+            "https://www.googleapis.com/auth/gmail.readonly",
+            "https://www.googleapis.com/auth/gmail.modify",
+        ],
+    )
+
+    tool = GmailToolKit(
+        gmail_account=gmail_account, run_as_thread=False, max_results=5, save_json=False
+    )
+    emails = tool.start()
     print(tool.get_mails())
