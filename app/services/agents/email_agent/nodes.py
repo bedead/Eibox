@@ -28,6 +28,7 @@ def get_gmail_toolkit(
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
     # creating namespace for storage
+    username = config["configurable"].get("username")
     user_id = config["configurable"].get("user_id", "test01")
     thread_id = config["configurable"].get("thread_id", "test_thread")
     namespace_for_memory = (user_id, thread_id, "emails")
@@ -67,9 +68,9 @@ def get_gmail_toolkit(
     # return Command(update={"email": gmail_tool.get_mails()[0]})
     return Command(
         update={
-            "email": data[0],
+            "email": gmail,
             "namespace_for_memory": namespace_for_memory,
-            "current_mail_id": data[0]["id"],
+            "current_mail_id": gmail["id"],
         }
     )
 

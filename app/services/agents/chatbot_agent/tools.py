@@ -13,30 +13,35 @@ from langchain_core.tools import tool
 @tool
 def get_userdetails_tool(config: RunnableConfig):
     """
-    Retrieves the (user ID/name of user) and thread ID from the AI agent's runtime configuration.
+    Retrieves the user_id, username and thread ID from the AI agent's runtime configuration.
 
     This tool is typically used to identify the current user and their associated chat thread
 
     Returns:
         dict: A dictionary containing:
             - "user_id" (str): The ID or username of the user.
+            - "username" (str): The unique username.
             - "thread_id" (str): The ID representing the current conversation or chat instance.
     """
 
     return {
         "user_id": config["configurable"].get("user_id"),
+        "username": config["configurable"].get("username"),
         "thread_id": config["configurable"].get("thread_id"),
     }
 
 
 @tool
-def start_email_scheduler_job_tool(user_id: str, thread_id: str, interval: int):
+def start_email_scheduler_job_tool(
+    user_id: str, username: str, thread_id: str, interval: int
+):
     """
     Starts a scheduled background job that periodically checks or processes emails
     related to a specific user and thread.
 
     Args:
         user_id (str): The unique identifier for the user.
+        username (str): The unique username.
         thread_id (str): The unique identifier of the email thread to track.
         interval (int): The frequency (in seconds) at which the job should run.
 
@@ -44,25 +49,26 @@ def start_email_scheduler_job_tool(user_id: str, thread_id: str, interval: int):
         Job: The background job instance that was started.
     """
     job: Job = start_email_scheduler_job(
-        user_id=user_id, thread_id=thread_id, interval=interval
+        user_id=user_id, username=username, thread_id=thread_id, interval=interval
     )
     return job
 
 
 @tool
-def delete_email_scheduler_job_tool(user_id: str, thread_id: str):
+def delete_email_scheduler_job_tool(user_id: str, username: str, thread_id: str):
     """
     Deletes or stops an existing scheduled job that was set to process or monitor
     emails for a specific user and thread.
 
     Args:
         user_id (str): The unique identifier for the user.
+        username (str): The unique username.
         thread_id (str): The unique identifier of the thread whose job should be deleted.
 
     Returns:
         Dict['status':]: status is "success" if job removed, and Exception e is returned in status.
     """
-    result = delete_email_scheduler_job(user_id, thread_id)
+    result = delete_email_scheduler_job(user_id, username, thread_id)
     return result
 
 

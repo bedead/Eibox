@@ -6,6 +6,7 @@ from app.schemas.google_access_token import GoogleAccessTokens
 from app.schemas.gmail_account import GmailAccount
 from app.db.redis import db_store
 from .save_gmail_accounts import save_gmail_account
+from .get_gmail_accounts import get_gmail_account
 from app.utils.common import get_db_gmail_account_key
 
 
@@ -16,9 +17,10 @@ def add_gmail_account(token: GoogleAccessTokens, namespace_for_memory: str):
 
     try:
         # Load existing accounts (if any)
-        raw = db_store.get(namespace=namespace_for_memory, key=key)
-        gmail_accounts: List[GmailAccount] = (
-            [GmailAccount(**item) for item in json.loads(raw.value)] if raw else []
+        gmail_accounts: List[GmailAccount] = get_gmail_account(
+            user_id=user_id,
+            username=username,
+            namespace_for_memory=namespace_for_memory,
         )
 
         # Build new GmailAccount from token
