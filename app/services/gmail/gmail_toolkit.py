@@ -26,7 +26,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# TODO: #10 Remove auto GmailToolKit class trigger to generate token.pickle file, as the token is retrived from db and before starting the agent the tokens are saved in backend session
 class GmailToolKit:
     def __init__(
         self,

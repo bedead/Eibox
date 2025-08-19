@@ -5,6 +5,7 @@ from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from dotenv import load_dotenv
 
 from app.schemas.chat_session import ChatSession
+from app.schemas.gmail_account import GmailAccount
 from app.services.gmail.gmail_toolkit import GmailToolKit
 from app.services.job_scheduler.jobs import start_email_scheduler_job
 from app.core.logging import logger
@@ -45,6 +46,11 @@ async def open_chat_websocket(
     # job = start_email_scheduler_job(
     #     username=username, user_id=user_id, thread_id=thread_id, interval=30
     # )
+    data: List[GmailAccount] = get_gmail_account(
+        user_id=user_id, username=username, namespace_for_memory=namespace_for_memory
+    )
+
+    print(data)
 
     connection_key = (username, user_id)
 
