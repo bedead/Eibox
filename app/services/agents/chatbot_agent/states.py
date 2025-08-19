@@ -7,9 +7,6 @@ class ChatbotState(TypedDict):
     Represents the state of a main agent in a graph.
     """
 
-    # User/Session management attribute
-    namespace_for_gmail: tuple
-
     # contextual information
     semantic_memory: Optional[str]
     episodic_memory: Optional[str]

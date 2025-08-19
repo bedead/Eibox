@@ -17,7 +17,7 @@ from langchain.chat_models import init_chat_model
 
 
 llm_model = init_chat_model(model="ollama:qwen2.5:0.5b")
-# gmail_tool = GmailToolKit(run_as_thread=False, save_json=False)
+namespace_for_memory = ("auth", "user")
 
 
 def get_gmail_toolkit(
@@ -27,14 +27,13 @@ def get_gmail_toolkit(
     Start the Gmail toolkit if it is not already running.
     This Node checks the current status of the Gmail toolkit and starts it if it is not running.
     """
-    # creating namespace for storage
+    # getting username and thread_id for chat instance
     username = config["configurable"].get("username")
-    user_id = config["configurable"].get("user_id", "test01")
     thread_id = config["configurable"].get("thread_id", "test_thread")
-    namespace_for_memory = (user_id, thread_id, "emails")
 
     # data = gmail_tool.start()
-
+    data_key = f"user-data:{username}:{thread_id}"
+    unread_key = f"user-unread_mails:{username}:{thread_id}"
     # dummy mail data
     gmail = {
         "id": "17f3a12b2e6c9a5e",
@@ -47,8 +46,8 @@ def get_gmail_toolkit(
     }
 
     # fetching data from storage if available
-    data_list = store.get(namespace_for_memory, key="data")
-    unread_mails = store.get(namespace_for_memory, key="unread_mails")
+    data_list = store.get(namespace_for_memory, key=data_key)
+    unread_mails = store.get(namespace_for_memory, key=unread_key)
 
     # Extract values or set defaults
     data_list: list = data_list.value if data_list else []
@@ -69,7 +68,6 @@ def get_gmail_toolkit(
     return Command(
         update={
             "email": gmail,
-            "namespace_for_memory": namespace_for_memory,
             "current_mail_id": gmail["id"],
         }
     )
@@ -122,7 +120,9 @@ def mail_response_format(state: EmailState):
     return {"response_format": response_format}
 
 
-def generate_draft_response(state: EmailState, store: BaseStore):
+def generate_draft_response(
+    state: EmailState, store: BaseStore, config: RunnableConfig
+):
     """
     Generate a draft response for the email using the AI toolkit.
     """
@@ -134,9 +134,16 @@ def generate_draft_response(state: EmailState, store: BaseStore):
     ]
     draft_response = llm_model.invoke(messages).content.lower().strip()
 
-    namespace_for_memory = state["namespace_for_memory"]
     mail_id: str = state["current_mail_id"]
-    data_list = store.get(namespace_for_memory, key="data")
+
+    # get username and thread_id
+    username = config["configurable"].get ("username")
+    thread_id = config["configurable"].get("thread_id")
+
+    # create key for data
+    data_key = f"user-data:{username}:{thread_id}"
+
+    data_list = store.get(namespace_for_memory, key=data_key)
     data_list: list = data_list.value if data_list else []
 
     # Update draft_response for the correct mail
@@ -147,7 +154,7 @@ def generate_draft_response(state: EmailState, store: BaseStore):
 
     store.put(
         namespace=namespace_for_memory,
-        key="data",
+        key=data_key,
         value=data_list,
     )
 

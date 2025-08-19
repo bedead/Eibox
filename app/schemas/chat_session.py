@@ -10,8 +10,8 @@ class ChatSession:
         self,
         websocket: WebSocket,
         username: str,
-        user_id: str,
         thread_id: str,
+        user_id: str = None,
         toolkit: GmailToolKit = None,
         job=None,
     ):

@@ -9,7 +9,7 @@ def register_user(user: RegisterSchema, namespace_for_memory: tuple) -> Dict[str
     """
     Register a new user with the provided user schema.
     """
-    user_key = f"user-auth:{user.username.lower()}"
+    user_key = f"user-auth:{user.username}"
     data = db_store.get(namespace=namespace_for_memory, key=user_key)
     if data and data.value:
         raise HTTPException(
@@ -22,13 +22,13 @@ def register_user(user: RegisterSchema, namespace_for_memory: tuple) -> Dict[str
         db_store.put(
             namespace=namespace_for_memory,
             key=user_key,
-            value=user.dict(),
+            value=user.model_dump_json(),
             index=False,
         )
         return {
             "success": 200,
             "message": "User registered successfully",
-            "data": user.dict(),
+            "data": user.model_dump_json(),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error registering user: {str(e)}")

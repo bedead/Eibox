@@ -6,8 +6,6 @@ class EmailState(TypedDict):
     A class to represent the state of a sequence agent in a graph.
     """
 
-    namespace_for_memory: tuple
-
     current_mail_id: str
     email: Dict[str, Any]  # Email data read from JSON file (One at a time)
     is_mail_important: Optional[bool]

@@ -3,7 +3,7 @@ from pydantic import Field, BaseModel, EmailStr
 
 
 class RegisterSchema(BaseModel):
-    id: str = Field(description="The unique identifier of the user")
+    user_id: str = Field(description="The unique identifier of the user")
     account_created: str = Field(
         description="The date and time when the user account was created"
     )

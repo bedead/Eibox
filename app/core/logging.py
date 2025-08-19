@@ -28,7 +28,7 @@ def setup_logging(
     )
 
     # File handler
-    timestamp = "DATE-19-08-2025-TIME-1:06PM"
+    timestamp = "DATE-19-08-2025-TIME-1-06PM"
     file_path = os.path.join(log_folder_name, f"{timestamp}.log")
     fh = logging.FileHandler(file_path, encoding="utf-8")
     fh.setFormatter(formatter)

@@ -18,7 +18,6 @@ active_sessions: Dict[Tuple[str, str], ChatSession] = {}
 
 
 class GoogleAccountRequest(BaseModel):
-    user_id: str
     username: str
 
 
@@ -26,7 +25,6 @@ class GoogleAccountRequest(BaseModel):
 def get_google_account(token: GoogleAccountRequest):
     try:
         return get_gmail_account(
-            user_id=token.user_id,
             username=token.username,
             namespace_for_memory=namespace_for_memory,
         )
@@ -34,47 +32,39 @@ def get_google_account(token: GoogleAccountRequest):
         raise HTTPException(status_code=500, detail=f"Failed to save tokens: {str(e)}")
 
 
-@router.websocket("/chatbot/v1/{username}/{user_id}/{thread_id}")
-async def open_chat_websocket(
-    websocket: WebSocket, username: str, user_id: str, thread_id: str
-):
+@router.websocket("/chatbot/v1/{username}/{thread_id}")
+async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: str):
     await websocket.accept()
-    logger.info(
-        f"Websocket {websocket.application_state.name} connection of user - {username} is opened."
-    )
+    logger.info(f"Websocket connection of user - {username} is opened.")
     # job = start_email_scheduler_job(
     #     username=username, user_id=user_id, thread_id=thread_id, interval=30
     # )
 
-    connection_key = (username, user_id)
+    connection_key = (username, thread_id)
 
     # TODO: #14 update GmailToolkit to use access_token to fetch gmail data
     # Create session object, can also add job=job
-    session = ChatSession(websocket, username, user_id, thread_id)
+    session = ChatSession(websocket, username, thread_id)
 
     active_sessions[connection_key] = session
 
     try:
         while True:
             message = await websocket.receive_text()
-            await websocket.send_text(
-                f"AI : {message} - from {username} - user_id {user_id}"
-            )
+            await websocket.send_text(f"AI : {message} - from {username}")
 
     except Exception as e:
         await websocket.send_text(f"Error: {str(e)}")
     finally:
         if connection_key in active_sessions:
             del active_sessions[connection_key]
-            logger.info(
-                f"{websocket.application_state.name} connection of user - {username} is closed."
-            )
+            logger.info(f"Websocket connection of user - {username} is closed.")
         await websocket.close()
 
 
-@router.post("/chatbot/v1/close/{username}/{user_id}/{thread_id}")
-async def close_chat_websocket(username: str, user_id: str, thread_id: str):
-    connection_key = (username, user_id)
+@router.post("/chatbot/v1/close/{username}/{thread_id}")
+async def close_chat_websocket(username: str, thread_id: str):
+    connection_key = (username, thread_id)
     chat_session = active_sessions.get(connection_key)
 
     if not chat_session:
@@ -93,7 +83,6 @@ async def close_chat_websocket(username: str, user_id: str, thread_id: str):
         return {
             "status": "already closed",
             "username": username,
-            "user_id": user_id,
             "thread_id": thread_id,
         }
 
@@ -104,7 +93,6 @@ async def close_chat_websocket(username: str, user_id: str, thread_id: str):
         return {
             "status": "closed",
             "username": username,
-            "user_id": user_id,
             "thread_id": thread_id,
         }
     except Exception as e:

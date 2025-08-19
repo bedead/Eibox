@@ -12,7 +12,6 @@ router = APIRouter()
 @router.post("/gmail/start/v1")
 def start_gmail_cron(input: CronJobSchema):
     job = start_email_scheduler_job(
-        user_id=input.user_id,
         username=input.username,
         thread_id=input.thread_id,
         interval=30,
@@ -24,7 +23,7 @@ def start_gmail_cron(input: CronJobSchema):
 @router.post("/gmail/delete/v1")
 def delete_gmail_cron(input: CronJobSchema):
     return delete_email_scheduler_job(
-        user_id=input.user_id, username=input.username, thread_id=input.thread_id
+        username=input.username, thread_id=input.thread_id
     )
 
 

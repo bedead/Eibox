@@ -6,9 +6,7 @@ from app.schemas.gmail_account import GmailAccount
 from app.utils.common import get_db_gmail_account_key
 
 
-def get_gmail_account(
-    user_id: str, username: str, namespace_for_memory: str
-) -> List[GmailAccount]:
+def get_gmail_account(username: str, namespace_for_memory: str) -> List[GmailAccount]:
     try:
         raw = db_store.get(
             namespace=namespace_for_memory,

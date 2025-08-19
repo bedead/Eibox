@@ -1,8 +1,8 @@
 from textwrap import dedent
 from typing import List, Dict, Any
-from langchain_core.messages import ToolMessage, HumanMessage, SystemMessage
+from langchain_core.messages import SystemMessage
 from langgraph.graph import StateGraph, START
-from langgraph.prebuilt import ToolNode, tools_condition, InjectedState
+from langgraph.prebuilt import ToolNode, tools_condition
 from app.services.agents.chatbot_agent.states import ChatbotState
 from langgraph.types import Command
 from langgraph.store.base import BaseStore
@@ -16,36 +16,28 @@ from app.utils._prompts import (
     EPISODIC_MEMORY_PROMPT,
     SEMANTIC_MEMORY_PROMPT,
 )
-from app.utils.common import clean_and_parse_ai_output
 from app.core.logging import logger
-
 
 
 graph_builder = StateGraph(ChatbotState)
 llm = init_chat_model(model="google_genai:gemini-2.0-flash", temperature=0.45)
 model_with_tools = llm.bind_tools(all_tools)
+namespace_for_memory = ("auth", "user")
 
 
 def context_update(
     state: ChatbotState, store: BaseStore, config: RunnableConfig
 ) -> Command:
     # Data extraction from config
-    username = config["configurable"].get("user_id", "satyam")
-    thread_id = config["configurable"].get("thread_id", "test_thread")
+    username = config["configurable"].get("username", "satyam")
+    # thread_id = config["configurable"].get("thread_id", "test_thread")
 
-    namespace_for_memory = (username.lower(), thread_id)
-    namespace_for_user_info = ("auth", "user")
-
-    semantic_memory_key = f"user-semantic-memory:{username.lower()}"
-    episodic_memory_key = f"user-episodic-memory:{username.lower()}"
+    semantic_memory_key = f"user-semantic-memory:{username}"
+    episodic_memory_key = f"user-episodic-memory:{username}"
 
     # Get past memory
-    semantic_memory = store.get(
-        namespace=namespace_for_user_info, key=semantic_memory_key
-    )
-    episodic_memory = store.get(
-        namespace=namespace_for_user_info, key=episodic_memory_key
-    )
+    semantic_memory = store.get(namespace=namespace_for_memory, key=semantic_memory_key)
+    episodic_memory = store.get(namespace=namespace_for_memory, key=episodic_memory_key)
 
     llm = init_chat_model(model="google_genai:gemini-2.0-flash", temperature=0.45)
     # Call LLM if semantic memory is available
@@ -64,7 +56,7 @@ def context_update(
 
     # store updated semantic memory
     store.put(
-        namespace=namespace_for_user_info,
+        namespace=namespace_for_memory,
         key=semantic_memory_key,
         value=updated_semantic_memory.content,
     )
@@ -81,7 +73,7 @@ def context_update(
 
     # store updated episodic memory
     store.put(
-        namespace=namespace_for_user_info,
+        namespace=namespace_for_memory,
         key=episodic_memory_key,
         value=updated_episodic_memory.content,
     )
@@ -94,18 +86,24 @@ def context_update(
             "episodic_memory": (
                 updated_episodic_memory if updated_episodic_memory else ""
             ),
-            "namespace_for_gmail": namespace_for_memory,
         }
     )
 
 
-def chatbot(state: ChatbotState, store: BaseStore) -> Command:
-    namespace: tuple = state["namespace_for_gmail"]
-    new_element = ("emails",)
-    updated_namespace = namespace + new_element
+def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Command:
     # fetching data from storage if available
-    mail_data_list = store.get(namespace=updated_namespace, key="data")
-    unread_mails = store.get(namespace=updated_namespace, key="unread_mails")
+
+    # get username and thread_id from chat config
+    username = config["configurable"].get("username")
+    thread_id = config["configurable"].get("thread_id")
+
+    # create unqiue key to get the data
+    data_key = f"user-data:{username}:{thread_id}"
+    unread_key = f"user-unread_mails:{username}:{thread_id}"
+
+    # get data from store
+    mail_data_list = store.get(namespace=namespace_for_memory, key=data_key)
+    unread_mails = store.get(namespace=namespace_for_memory, key=unread_key)
 
     # Extract values or set defaults
     mail_data_list: List[Dict[str, Any]] = (
@@ -114,10 +112,6 @@ def chatbot(state: ChatbotState, store: BaseStore) -> Command:
     unread_mails: int = unread_mails.value if unread_mails else 0
     semantic_memory = state["semantic_memory"]
     episodic_memory = state["episodic_memory"]
-
-    # # Debugging print statements
-    # print(f"Semantic memory: {semantic_memory}")
-    # print(f"Episodic memory: {episodic_memory}")
 
     unread_mail_data_list = []
     for i in mail_data_list:
