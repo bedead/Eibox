@@ -7,18 +7,15 @@ from app.schemas.gmail_account import GmailAccount
 from app.db.redis import db_store
 from .save_gmail_accounts import save_gmail_account
 from .get_gmail_accounts import get_gmail_account
-from app.utils.common import get_db_gmail_account_key
 
 
 def add_gmail_account(token: GoogleAccessTokens, namespace_for_memory: str):
     username = token.username
-    user_id = token.user_id
-    key = get_db_gmail_account_key(user_id=user_id, username=username)
+    key = f"user-gmail-accounts:{username}"
 
     try:
         # Load existing accounts (if any)
         gmail_accounts: List[GmailAccount] = get_gmail_account(
-            user_id=user_id,
             username=username,
             namespace_for_memory=namespace_for_memory,
         )
@@ -41,7 +38,6 @@ def add_gmail_account(token: GoogleAccessTokens, namespace_for_memory: str):
 
         # Save updated accounts
         save_gmail_account(
-            user_id=user_id,
             username=username,
             accounts=gmail_accounts,
             namespace_for_memory=namespace_for_memory,

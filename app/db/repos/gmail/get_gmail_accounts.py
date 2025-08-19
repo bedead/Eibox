@@ -3,14 +3,14 @@ from typing import List
 from fastapi import HTTPException
 from app.db.redis import db_store
 from app.schemas.gmail_account import GmailAccount
-from app.utils.common import get_db_gmail_account_key
 
 
 def get_gmail_account(username: str, namespace_for_memory: str) -> List[GmailAccount]:
+    key = f"user-gmail-accounts:{username}"
     try:
         raw = db_store.get(
             namespace=namespace_for_memory,
-            key=get_db_gmail_account_key(user_id=user_id, username=username),
+            key=key,
         )
         gmail_accounts: List[GmailAccount] = (
             [GmailAccount(**item) for item in json.loads(raw.value)] if raw else []

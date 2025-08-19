@@ -61,6 +61,3 @@ def clean_and_parse_ai_output(text: str):
         return None
 
 
-def get_db_gmail_account_key(username: str) -> str:
-    """"""
-    return f"user-gmail-accounts:{username}"

@@ -1,3 +1,4 @@
+from app.services.session.get_session import get_session
 from app.utils._prompts import (
     IS_MAIL_IMPORTANT_PROMPT,
     IS_RESPONSE_NEEDED_PROMPT,
@@ -7,7 +8,6 @@ from app.utils._prompts import (
 from app.services.agents.email_agent.states import EmailState
 from langgraph.graph import END
 from langgraph.types import interrupt, Command
-from app.services.gmail.gmail_toolkit import GmailToolKit
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore
 
@@ -31,19 +31,23 @@ def get_gmail_toolkit(
     username = config["configurable"].get("username")
     thread_id = config["configurable"].get("thread_id", "test_thread")
 
-    # data = gmail_tool.start()
+    # get session data
+    session = get_session(username=username, thread_id=thread_id)
+    gmail_toolkit = session.gmail_toolkit
+    data = gmail_toolkit.start()
+
     data_key = f"user-data:{username}:{thread_id}"
     unread_key = f"user-unread_mails:{username}:{thread_id}"
     # dummy mail data
-    gmail = {
-        "id": "17f3a12b2e6c9a5e",
-        "subject": "URGENT: Immediate Action Required on Your Internship Application",
-        "sender": "hr@companycareers.com",
-        "date": "2025-07-03T09:15:00Z",
-        "body": "Dear Satyam,\n\nWe reviewed your internship application and require additional documents to process your candidacy. Please upload your updated resume and project portfolio by 6 PM IST today. Without these, your application will not be considered further.\n\nIf you've already submitted them, kindly ignore this message.\n\nRegards,\nHR Team\nCompanyCareers",
-        "unread": True,
-        "snippet": "We reviewed your internship application and require additional documents to process...",
-    }
+    # gmail = {
+    #     "id": "17f3a12b2e6c9a5e",
+    #     "subject": "URGENT: Immediate Action Required on Your Internship Application",
+    #     "sender": "hr@companycareers.com",
+    #     "date": "2025-07-03T09:15:00Z",
+    #     "body": "Dear Satyam,\n\nWe reviewed your internship application and require additional documents to process your candidacy. Please upload your updated resume and project portfolio by 6 PM IST today. Without these, your application will not be considered further.\n\nIf you've already submitted them, kindly ignore this message.\n\nRegards,\nHR Team\nCompanyCareers",
+    #     "unread": True,
+    #     "snippet": "We reviewed your internship application and require additional documents to process...",
+    # }
 
     # fetching data from storage if available
     data_list = store.get(namespace_for_memory, key=data_key)
@@ -58,17 +62,17 @@ def get_gmail_toolkit(
     # print(f"Unread mails from store: {unread_mails}")
 
     # Update in-memory, then write back once
-    data_list.append(gmail)
+    data_list.append(data[0])
     unread_mails += 1
 
-    store.put(namespace_for_memory, key="data", value=data_list)
-    store.put(namespace_for_memory, key="unread_mails", value=unread_mails)
+    store.put(namespace_for_memory, key=data_key, value=data_list)
+    store.put(namespace_for_memory, key=unread_key, value=unread_mails)
 
     # return Command(update={"email": gmail_tool.get_mails()[0]})
     return Command(
         update={
-            "email": gmail,
-            "current_mail_id": gmail["id"],
+            "email": data[0],
+            "current_mail_id": data[0]["id"],
         }
     )
 
@@ -137,7 +141,7 @@ def generate_draft_response(
     mail_id: str = state["current_mail_id"]
 
     # get username and thread_id
-    username = config["configurable"].get ("username")
+    username = config["configurable"].get("username")
     thread_id = config["configurable"].get("thread_id")
 
     # create key for data

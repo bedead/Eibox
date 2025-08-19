@@ -1,4 +1,4 @@
-from api.schema.GoogleAccessTokens import GoogleAccessTokens
+from app.schemas.google_access_token import GoogleAccessTokens
 
 
 def remove_gmail_account(token: GoogleAccessTokens, namespace_for_memory: str):

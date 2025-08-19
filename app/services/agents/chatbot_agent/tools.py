@@ -8,6 +8,8 @@ from langchain_core.runnables import RunnableConfig
 from typing import List, Optional
 from langchain_core.tools import tool
 
+from app.services.session.get_session import get_session
+
 
 # TODO: add more util tools
 @tool
@@ -32,9 +34,7 @@ def get_userdetails_tool(config: RunnableConfig):
 
 
 @tool
-def start_email_scheduler_job_tool(
-    user_id: str, username: str, thread_id: str, interval: int
-):
+def start_email_scheduler_job_tool(username: str, thread_id: str, interval: int):
     """
     Starts a scheduled background job that periodically checks or processes emails
     related to a specific user and thread.
@@ -49,13 +49,13 @@ def start_email_scheduler_job_tool(
         Job: The background job instance that was started.
     """
     job: Job = start_email_scheduler_job(
-        user_id=user_id, username=username, thread_id=thread_id, interval=interval
+        username=username, thread_id=thread_id, interval=interval
     )
     return job
 
 
 @tool
-def delete_email_scheduler_job_tool(user_id: str, username: str, thread_id: str):
+def delete_email_scheduler_job_tool(username: str, thread_id: str):
     """
     Deletes or stops an existing scheduled job that was set to process or monitor
     emails for a specific user and thread.
@@ -68,12 +68,14 @@ def delete_email_scheduler_job_tool(user_id: str, username: str, thread_id: str)
     Returns:
         Dict['status':]: status is "success" if job removed, and Exception e is returned in status.
     """
-    result = delete_email_scheduler_job(user_id, username, thread_id)
+    result = delete_email_scheduler_job(username, thread_id)
     return result
 
 
 @tool
 def search_gmails_tool(
+    username: str,
+    thread_id: str,
     from_date: Optional[str] = None,  # Format: "d/m/yyyy"
     to_date: Optional[str] = None,
     query: Optional[str] = None,
@@ -139,8 +141,9 @@ def search_gmails_tool(
             max_results=5
         )
     """
-    toolkit = GmailToolKit()
-    return toolkit.check_emails(
+    session = get_session(username=username, thread_id=thread_id)
+    gmail_toolkit = session.gmail_toolkit
+    return gmail_toolkit.check_emails(
         from_date=from_date,
         to_date=to_date,
         query=query,
