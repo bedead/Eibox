@@ -20,7 +20,7 @@ def login_user(user: LoginSchema, namespace_for_memory: tuple):
 
         # Check if user exists and password matches
         if not data or not data.value:
-            logger.info(f"404: User not found")
+            logger.debug(f"404: User not found")
             raise HTTPException(status_code=404, detail="User not found")
 
         # Assuming data is a dictionary with a 'password' field
@@ -38,5 +38,5 @@ def login_user(user: LoginSchema, namespace_for_memory: tuple):
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
     # If user exists and password matches, return success
-    logger.info(f"User {user.username} logged in successfully")
+    logger.debug(f"User {user.username} logged in successfully")
     return {"success": 200, "message": "User logged in successfully", "data": data}

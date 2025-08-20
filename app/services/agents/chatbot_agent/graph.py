@@ -118,8 +118,8 @@ def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Co
         if i.get("unread"):
             # print(f"Skipping read mail: {i.get('unread')}")
             unread_mail_data_list.append(i)
-    logger.info(f"Unread mail data list: {unread_mail_data_list}")
-    logger.info(f"Unread mails: {unread_mails}")
+    logger.debug(f"Unread mail data list: {unread_mail_data_list}")
+    logger.debug(f"Unread mails: {unread_mails}")
 
     system_instruction = CHATBOT_SYSTEM_INSTRUCTION.format(
         unread_mails=unread_mails,

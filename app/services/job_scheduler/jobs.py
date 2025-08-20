@@ -7,11 +7,11 @@ from apscheduler.job import Job
 
 
 def fetch_email_data(username: str, thread_id: str, config: RunnableConfig):
-    logger.info(f"[{datetime.now()}] Running email agent job...")
+    logger.debug(f"[{datetime.now()}] Running email agent job...")
     config["configurable"]["username"] = username
     config["configurable"]["thread_id"] = thread_id
     result = EmailAgent.invoke(input=EmailState(), config=config)
-    logger.info(result)
+    # logger.debug(result)
 
     # return result
 

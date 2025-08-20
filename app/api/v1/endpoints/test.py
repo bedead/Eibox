@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple
 from fastapi import APIRouter, HTTPException, WebSocket
 from pydantic import BaseModel
+from app.db.repos.gmail.save_refreshed_tokens import save_refreshed_tokens
 from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from dotenv import load_dotenv
 
@@ -37,24 +38,33 @@ def get_google_account(token: GoogleAccountRequest):
 @router.websocket("/chatbot/v1/{username}/{thread_id}")
 async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: str):
     await websocket.accept()
-    logger.info(f"Websocket connection of user - {username} is opened.")
+    logger.debug(f"Websocket connection of user - {username} is opened.")
     # job = start_email_scheduler_job(
     #     username=username, user_id=user_id, thread_id=thread_id, interval=30
     # )
-    data: List[GmailAccount] = get_gmail_account(
-        username=username, namespace_for_memory=namespace_for_memory
-    )
-    # print(f"Gmail_accounts : {data}")
-    if data and len(data) > 0:
-        gmail_toolkit = GmailToolKit(gmail_account=data[0])
+    session = get_session(username=username, thread_id=thread_id)
+    if not session:
+        logger.debug(
+            f"Session object not found creating new session for {username} with thread_id {thread_id}"
+        )
+        data: List[GmailAccount] = get_gmail_account(
+            username=username, namespace_for_memory=namespace_for_memory
+        )
+        # print(f"Gmail_accounts : {data}")
+        if data and len(data) > 0:
+            gmail_toolkit = GmailToolKit(
+                gmail_account=data[0],
+                token_refresh_callback=save_refreshed_tokens,
+                username=username,
+            )
 
-    # store session
-    store_session(
-        websocket=websocket,
-        username=username,
-        thread_id=thread_id,
-        gmail_toolkit=gmail_toolkit,
-    )
+        # store session
+        store_session(
+            websocket=websocket,
+            username=username,
+            thread_id=thread_id,
+            gmail_toolkit=gmail_toolkit,
+        )
 
     try:
         while True:
@@ -65,7 +75,7 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
         await websocket.send_text(f"Error: {str(e)}")
     finally:
         delete_session(username=username, thread_id=thread_id)
-        logger.info(f"Websocket connection of user - {username} is closed.")
+        logger.debug(f"Websocket connection of user - {username} is closed.")
         await websocket.close()
 
 

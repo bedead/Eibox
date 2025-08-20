@@ -1,7 +1,7 @@
 from typing import Dict, Tuple
 
 from app.schemas.chat_session import ChatSession
-
+from app.core.logging import logger
 
 active_sessions: Dict[Tuple[str, str], ChatSession] = {}
 
@@ -17,3 +17,5 @@ def store_session(username: str, thread_id: str, websocket=None, gmail_toolkit=N
     )
 
     active_sessions[connection_key] = session
+
+    logger.debug(f"New session for user {username} is created")

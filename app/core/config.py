@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     JWT_SECRET: str = ""  # TODO: study and update
     JWT_ALGO: str = ""  # TODO: study and update
 
-    LOG_TYPE: str = "debug"  # "info" or "debug"
+    LOG_TYPE: str = "info"  # "info" or "debug"
     LOG_FOLDER_NAME: str = "log_dump"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

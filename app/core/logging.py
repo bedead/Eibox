@@ -38,9 +38,11 @@ def setup_logging(
     ch.setFormatter(formatter)
 
     if log_type == "debug":
+        root_logger.setLevel(logging.DEBUG)
         fh.setLevel(logging.DEBUG)
         ch.setLevel(logging.DEBUG)
     else:
+        root_logger.setLevel(logging.INFO)
         fh.setLevel(logging.DEBUG)  # keep full logs in file
         ch.setLevel(logging.INFO)
 
@@ -48,7 +50,6 @@ def setup_logging(
     root_logger.addHandler(ch)
 
     # Only for initial confirmation
-    root_logger.info(f"Logging initialized with level={log_type}, file={file_path}")
 
     return root_logger
 
@@ -56,3 +57,4 @@ def setup_logging(
 logger = setup_logging(
     log_type=settings.LOG_TYPE, log_folder_name=settings.LOG_FOLDER_NAME
 )
+logger.debug(f"Logging initialized with level={settings.LOG_TYPE}")

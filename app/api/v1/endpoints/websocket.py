@@ -39,7 +39,7 @@ def call_graph(user_input: str, username: str, thread_id: str):
 @router.websocket("/chatbot/v1/{username}/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str):
     await websocket.accept()
-    logger.info(f"Websocket connection of user - {username} is opened.")
+    logger.debug(f"Websocket connection of user - {username} is opened.")
 
     # job = start_email_scheduler_job(
     #     username=username, user_id=user_id, thread_id=thread_id, interval=30
@@ -82,7 +82,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
     finally:
         if connection_key in active_sessions:
             del active_sessions[connection_key]
-            logger.info(f"Websocket connection of user - {username} is closed.")
+            logger.debug(f"Websocket connection of user - {username} is closed.")
         await websocket.close()
 
 

@@ -3,6 +3,7 @@ from typing import List
 from fastapi import HTTPException
 from app.db.redis import db_store
 from app.schemas.gmail_account import GmailAccount
+from app.core.logging import logger
 
 
 def save_gmail_account(
@@ -18,7 +19,10 @@ def save_gmail_account(
             key=key,
             value=json.dumps([account.model_dump() for account in accounts]),
         )
+        logger.debug(f"Saved the gmail_account data for {username}.")
+
     except Exception as e:
+        logger.error(f"Error while storing gmail accounts: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error while storing gmail accounts: {str(e)}"
         )

@@ -8,6 +8,14 @@ from app.core.logging import logger
 load_dotenv()
 
 
+def get_gcp_client_id() -> str:
+    return os.environ.get("GMAIL_WEB_CLIENT_ID")
+
+
+def get_gcp_client_secret() -> str:
+    return os.environ.get("GMAIL_WEB_CLIENT_SECRET")
+
+
 def get_google_gemini_key() -> str | None:
     """Get the Google Gemini API key from environment variables."""
     return os.environ.get("GOOGLE_API_KEY")
@@ -59,5 +67,3 @@ def clean_and_parse_ai_output(text: str):
     except json.JSONDecodeError as e:
         logger.error(f"JSON parsing error: {e}", exc_info=True)
         return None
-
-

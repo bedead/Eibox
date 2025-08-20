@@ -3,12 +3,26 @@ import os
 import time
 import base64
 import threading
+import requests
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Callable
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
+from pydantic import BaseModel, EmailStr
 from app.core.logging import logger
-from app.schemas.gmail_account import GmailAccount
+from app.utils.common import get_gcp_client_id, get_gcp_client_secret
+
+
+class GmailAccount(BaseModel):
+    email: EmailStr
+    refresh_token: Optional[str]
+    access_token: str
+    expires_in: Optional[int]
+    token_type: Optional[str]
+    scope: Optional[List[str]]
+    client_id: Optional[str] = None  # Required for token refresh
+    client_secret: Optional[str] = None  # Required for token refresh
 
 
 class GmailToolKit:
@@ -20,6 +34,8 @@ class GmailToolKit:
         json_file: Optional[str] = None,
         interval: int = 5,
         max_results: int = 1,
+        username: str = None,
+        token_refresh_callback: Optional[Callable[[GmailAccount, str], None]] = None,
     ):
         """
         Initializes the GmailToolKit with the provided parameters and sets up the Gmail API service.
@@ -31,6 +47,7 @@ class GmailToolKit:
             json_file: Optional[str] = None - Path to the JSON file where emails will be saved.
             interval: int = 5 - Time interval in seconds for checking new emails.
             max_results: int = 1 - Maximum number of emails to fetch in each check.
+            token_refresh_callback: Optional[Callable] - Callback function to save refreshed tokens
         """
         self.gmail_account = gmail_account
         self.run_as_thread = run_as_thread
@@ -47,8 +64,105 @@ class GmailToolKit:
         self.paused: bool = False
         self.last_check_time = None
         self.logger = logger
+        self.token_refresh_callback = token_refresh_callback
+        self.token_expires_at = None
+        self._calculate_token_expiry()
         self.authenticate()
+        self.username = username
         self.logger.debug(f"GmailToolKit initialized for {self.gmail_account.email}.")
+
+    def _calculate_token_expiry(self):
+        """Calculate when the current token expires."""
+        if self.gmail_account.expires_in:
+            self.token_expires_at = datetime.now() + timedelta(
+                seconds=self.gmail_account.expires_in
+            )
+        else:
+            # Default to 1 hour if expires_in is not provided
+            self.token_expires_at = datetime.now() + timedelta(hours=1)
+
+    def _is_token_expired(self) -> bool:
+        """Check if the current token is expired or will expire soon (within 5 minutes)."""
+        if not self.token_expires_at:
+            return True
+        return datetime.now() >= (self.token_expires_at - timedelta(minutes=5))
+
+    def _refresh_access_token(self) -> bool:
+        """
+        Refresh the access token using the refresh token.
+        Returns True if successful, False otherwise.
+        """
+        if not self.gmail_account.refresh_token:
+            self.logger.error("No refresh token available for token refresh")
+            return False
+
+        if not self.gmail_account.client_id or not self.gmail_account.client_secret:
+            self.logger.error(
+                "Client ID and Client Secret are required for token refresh"
+            )
+            return False
+
+        try:
+            # Google OAuth2 token refresh endpoint
+            token_url = "https://oauth2.googleapis.com/token"
+
+            data = {
+                "client_id": get_gcp_client_id(),
+                "client_secret": get_gcp_client_secret(),
+                "refresh_token": self.gmail_account.refresh_token,
+                "grant_type": "refresh_token",
+            }
+
+            response = requests.post(token_url, data=data)
+            response.raise_for_status()
+
+            token_data = response.json()
+
+            # Update the account with new tokens
+            self.gmail_account.access_token = token_data["access_token"]
+            self.gmail_account.expires_in = token_data.get("expires_in", 3600)
+
+            # Update refresh token if a new one is provided
+            if "refresh_token" in token_data:
+                self.gmail_account.refresh_token = token_data["refresh_token"]
+
+            # Recalculate expiry time
+            self._calculate_token_expiry()
+
+            # Call callback to save updated tokens
+            if self.token_refresh_callback:
+                self.token_refresh_callback(self.gmail_account, username=self.username)
+
+            self.logger.debug(
+                f"Token refreshed successfully for {self.gmail_account.email}"
+            )
+            return True
+
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"HTTP error during token refresh: {str(e)}")
+            return False
+        except KeyError as e:
+            self.logger.error(f"Missing key in token refresh response: {str(e)}")
+            return False
+        except Exception as e:
+            self.logger.error(
+                f"Unexpected error during token refresh: {str(e)}", exc_info=True
+            )
+            return False
+
+    def _ensure_valid_token(self):
+        """Ensure we have a valid access token, refreshing if necessary."""
+        if self._is_token_expired():
+            self.logger.debug(
+                "Token is expired or will expire soon, attempting refresh..."
+            )
+            if not self._refresh_access_token():
+                raise RuntimeError(
+                    "Failed to refresh access token and current token is expired"
+                )
+
+            # Re-authenticate with the new token
+            self.authenticate()
 
     def authenticate(self):
         """
@@ -60,8 +174,8 @@ class GmailToolKit:
                 token=self.gmail_account.access_token,
                 refresh_token=self.gmail_account.refresh_token,
                 token_uri="https://oauth2.googleapis.com/token",
-                client_id=None,  # Not needed for token-based auth
-                client_secret=None,  # Not needed for token-based auth
+                client_id=get_gcp_client_id(),
+                client_secret=get_gcp_client_secret(),
                 scopes=self.gmail_account.scope
                 or [
                     "https://www.googleapis.com/auth/gmail.readonly",
@@ -129,6 +243,9 @@ class GmailToolKit:
     def get_email_content_based_on_gmail_id(self, message_id):
         """Retrieve email content given the email ID."""
         try:
+            # Ensure we have a valid token before making API calls
+            self._ensure_valid_token()
+
             message = (
                 self.service.users()
                 .messages()
@@ -199,6 +316,8 @@ class GmailToolKit:
         Fetches emails from the user's Gmail inbox using advanced search filters.
         """
         try:
+            # Ensure we have a valid token before making API calls
+            self._ensure_valid_token()
 
             def parse_date(date_str: str) -> str:
                 day, month, year = map(int, date_str.split("/"))
@@ -367,6 +486,9 @@ class GmailToolKit:
         """
         status = {}
         try:
+            # Ensure we have a valid token before making API calls
+            self._ensure_valid_token()
+
             message = {
                 "raw": base64.urlsafe_b64encode(
                     f"From: me\nTo: {to}\nSubject: {subject}\n\n{body}".encode("utf-8")
