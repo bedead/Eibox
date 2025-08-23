@@ -16,6 +16,10 @@ def get_gcp_client_secret() -> str:
     return os.environ.get("GMAIL_WEB_CLIENT_SECRET")
 
 
+def get_gmail_redirect_uri() -> str:
+    return os.environ.get("GMAIL_WEB_REDIRECT_URI")
+
+
 def get_google_gemini_key() -> str | None:
     """Get the Google Gemini API key from environment variables."""
     return os.environ.get("GOOGLE_API_KEY")

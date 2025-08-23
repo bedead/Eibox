@@ -1,27 +1,24 @@
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 import requests
-from dotenv import load_dotenv
 from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
 from google_auth_oauthlib.flow import Flow
-import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from app.services.gmail.gmail_toolkit import GmailAccount
 from app.core.config import settings
+from app.utils.common import (
+    get_gcp_client_id,
+    get_gcp_client_secret,
+    get_gmail_redirect_uri,
+)
 
-load_dotenv()
-
+GOOGLE_CLIENT_ID: str = get_gcp_client_id()
+GOOGLE_CLIENT_SECRET: str = get_gcp_client_secret()
+OAUTH_REDIRECT_URI: str = get_gmail_redirect_uri()
 
 router = APIRouter()
 namespace_for_memory = ("auth", "user")
-
-
-# Google OAuth2 settings
-GOOGLE_CLIENT_ID = os.getenv("GMAIL_WEB_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GMAIL_WEB_CLIENT_SECRET")
-OAUTH_REDIRECT_URI = os.getenv("GMAIL_WEB_REDIRECT_URI")
-
 
 oauth_states = {}
 
@@ -135,7 +132,9 @@ async def gmail_oauth_callback(request: Request):
             email=user_info.get("email"),
             access_token=credentials.token,
             refresh_token=credentials.refresh_token,
-            expires_in=int((credentials.expiry - datetime.now()).total_seconds()),
+            expires_in=int(
+                (credentials.expiry - datetime.now(timezone.utc)).total_seconds()
+            ),
             token_type="Bearer",
             scope=settings.GOOGLE_GMAIL_SCOPE,
         )

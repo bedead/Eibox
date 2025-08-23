@@ -13,6 +13,7 @@ from app.schemas.gmail_account import GmailAccount
 from app.utils.common import get_gcp_client_id, get_gcp_client_secret
 from app.core.config import settings
 
+
 class GmailToolKit:
     def __init__(
         self,
@@ -162,10 +163,9 @@ class GmailToolKit:
                 token=self.gmail_account.access_token,
                 refresh_token=self.gmail_account.refresh_token,
                 token_uri="https://oauth2.googleapis.com/token",
-                client_id=get_gcp_client_id(),
-                client_secret=get_gcp_client_secret(),
-                scopes=self.gmail_account.scope
-                or settings.GOOGLE_GMAIL_SCOPE
+                client_id=None,
+                client_secret=None,
+                scopes=self.gmail_account.scope or settings.GOOGLE_GMAIL_SCOPE,
             )
 
             # Build the service

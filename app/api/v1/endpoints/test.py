@@ -51,6 +51,7 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
             username=username, namespace_for_memory=namespace_for_memory
         )
         # print(f"Gmail_accounts : {data}")
+        gmail_toolkit: GmailToolKit = None
         if data and len(data) > 0:
             gmail_toolkit = GmailToolKit(
                 gmail_account=data[0],
