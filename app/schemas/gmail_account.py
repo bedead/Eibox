@@ -10,9 +10,9 @@ class GmailAccount(BaseModel):
 
     username: str
     email: EmailStr
-    refresh_token: Optional[str]
-    token_last_refresh_time: Optional[datetime]
+    refresh_token: str
+    token_last_refresh_time: Optional[datetime] = None
     access_token: str
-    expires_in: Optional[int]
-    token_type: Optional[str]
-    scope: Optional[List[str]]
+    expires_in: int
+    token_type: Optional[str] = None
+    scope: List[str]
