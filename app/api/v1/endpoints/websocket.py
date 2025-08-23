@@ -1,16 +1,22 @@
 from typing import Dict, Tuple
 from fastapi import APIRouter, HTTPException, WebSocket
+from git import List
 from langgraph.config import RunnableConfig
 from langchain_core.messages import AIMessageChunk
-from app.schemas.chat_session import ChatSession
+from app.db.repos.gmail.save_refreshed_tokens import save_refreshed_tokens
+from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
+from app.schemas.gmail_account import GmailAccount
 from app.services.agents.chatbot_agent import ChatAgent, ChatbotState
 from app.services.gmail.gmail_toolkit import GmailToolKit
+from app.services.session.delete_session import delete_session
+from app.services.session.get_session import get_session
+from app.services.session.store_session import store_session
 from app.utils._api_helper import _to_async_gen
 from app.core.logging import logger
 
 router = APIRouter()
-# Global session registry
-active_sessions: Dict[Tuple[str, str], ChatSession] = {}
+
+namespace_for_memory = ("auth", "user")
 
 
 def call_graph(user_input: str, username: str, thread_id: str):
@@ -44,19 +50,30 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
     # job = start_email_scheduler_job(
     #     username=username, user_id=user_id, thread_id=thread_id, interval=30
     # )
-    connection_key = (username, thread_id)
+    session = get_session(username=username, thread_id=thread_id)
+    if not session:
+        logger.debug(
+            f"Session object not found creating new session for {username} with thread_id {thread_id}"
+        )
+        data: List[GmailAccount] = get_gmail_account(
+            username=username, namespace_for_memory=namespace_for_memory
+        )
+        # print(f"Gmail_accounts : {data}")
+        gmail_toolkit: GmailToolKit = None
+        if data and len(data) > 0:
+            gmail_toolkit = GmailToolKit(
+                gmail_account=data[0],
+                token_refresh_callback=save_refreshed_tokens,
+                username=username,
+            )
 
-    # TODO: #14 update GmailToolkit to use access_token to fetch gmail data
-    # Create session object, can also add job=job
-    session = ChatSession(
-        websocket=websocket,
-        username=username,
-        thread_id=thread_id,
-        # toolkit=GmailToolKit(),
-        # job=job,
-    )
-
-    active_sessions[connection_key] = session
+        # store session
+        store_session(
+            websocket=websocket,
+            username=username,
+            thread_id=thread_id,
+            gmail_toolkit=gmail_toolkit,
+        )
 
     try:
         while True:
@@ -80,28 +97,36 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
         except:
             pass
     finally:
-        if connection_key in active_sessions:
-            del active_sessions[connection_key]
-            logger.debug(f"Websocket connection of user - {username} is closed.")
+        delete_session(username=username, thread_id=thread_id)
+        logger.debug(f"Websocket connection of user - {username} is closed.")
         await websocket.close()
 
 
 @router.post("/chatbot/v1/close/{username}/{thread_id}")
 async def close_websocket(username: str, thread_id: str):
-    connection_key = (username, thread_id)
-    chat_session = active_sessions.get(connection_key)
-    websocket = chat_session.websocket
-    if websocket:
-        try:
-            await websocket.close(code=1000)  # Normal closure
-            del active_sessions[connection_key]
+    session = get_session(username, thread_id)
+    websocket = session.websocket
+
+    try:
+        delete_session(username, thread_id)
+        # Already closed?
+        if websocket.client_state.name == "DISCONNECTED":
+            # cleanup stale session
             return {
-                "status": "closed",
+                "status": "websocket already closed",
                 "username": username,
+                "thread_id": thread_id,
             }
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to close websocket: {str(e)}"
-            )
-    else:
-        raise HTTPException(status_code=404, detail="WebSocket connection not found")
+        else:
+            await websocket.close(code=1000)  # Normal closure
+            return {
+                "status": "websocket closed and cleared session",
+                "username": username,
+                "thread_id": thread_id,
+            }
+
+    except Exception as e:
+        logger.error(f"500: Failed to close websocket: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to close websocket: {str(e)}"
+        )
