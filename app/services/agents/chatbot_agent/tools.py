@@ -15,19 +15,17 @@ from app.services.session.get_session import get_session
 @tool
 def get_userdetails_tool(config: RunnableConfig):
     """
-    Retrieves the user_id, username and thread ID from the AI agent's runtime configuration.
+    Retrieves the username and thread ID from the AI agent's runtime configuration.
 
     This tool is typically used to identify the current user and their associated chat thread
 
     Returns:
         dict: A dictionary containing:
-            - "user_id" (str): The ID or username of the user.
             - "username" (str): The unique username.
             - "thread_id" (str): The ID representing the current conversation or chat instance.
     """
 
     return {
-        "user_id": config["configurable"].get("user_id"),
         "username": config["configurable"].get("username"),
         "thread_id": config["configurable"].get("thread_id"),
     }
@@ -40,7 +38,6 @@ def start_email_scheduler_job_tool(username: str, thread_id: str, interval: int)
     related to a specific user and thread.
 
     Args:
-        user_id (str): The unique identifier for the user.
         username (str): The unique username.
         thread_id (str): The unique identifier of the email thread to track.
         interval (int): The frequency (in seconds) at which the job should run.
@@ -61,7 +58,6 @@ def delete_email_scheduler_job_tool(username: str, thread_id: str):
     emails for a specific user and thread.
 
     Args:
-        user_id (str): The unique identifier for the user.
         username (str): The unique username.
         thread_id (str): The unique identifier of the thread whose job should be deleted.
 
@@ -124,8 +120,8 @@ def search_gmails_tool(
         page_token (Optional[str]): Gmail API pagination token to fetch the next page of results.
 
     Returns:
-        List[dict]: A list of email dictionaries containing parsed metadata and content.
-                    Each email is obtained using `self.get_email_content_based_on_gmail_id(message_id)`.
+        dict: A dictionary containing the status, and result data of the search operation.
+              Example: {"status": "success", "result" : List[dict] } or {"status": "error", "error": "Error message"}
 
     Raises:
         Logs the exception and returns an empty list if any error occurs during execution.
@@ -143,26 +139,57 @@ def search_gmails_tool(
     """
     session = get_session(username=username, thread_id=thread_id)
     gmail_toolkit = session.gmail_toolkit
-    return gmail_toolkit.check_emails(
-        from_date=from_date,
-        to_date=to_date,
-        query=query,
-        subject=subject,
-        sender=sender,
-        recipient=recipient,
-        is_read=is_read,
-        is_starred=is_starred,
-        is_important=is_important,
-        has_attachment=has_attachment,
-        filename=filename,
-        larger_than=larger_than,
-        category=category,
-        label_ids=label_ids,
-        include_spam=include_spam,
-        include_trash=include_trash,
-        max_results=max_results,
-        page_token=page_token,
-    )
+    try:
+        data: List[dict] = gmail_toolkit.check_emails(
+            from_date=from_date,
+            to_date=to_date,
+            query=query,
+            subject=subject,
+            sender=sender,
+            recipient=recipient,
+            is_read=is_read,
+            is_starred=is_starred,
+            is_important=is_important,
+            has_attachment=has_attachment,
+            filename=filename,
+            larger_than=larger_than,
+            category=category,
+            label_ids=label_ids,
+            include_spam=include_spam,
+            include_trash=include_trash,
+            max_results=max_results,
+            page_token=page_token,
+        )
+        return {
+            "status": "success",
+            "result": data,
+        }
+
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
+
+@tool
+def delete_email_tool(username: str, thread_id: str, message_id: str) -> dict:
+    """
+    Deletes a specific email from the user's Gmail account.
+
+    Args:
+        username (str): The unique username.
+        thread_id (str): The unique identifier of the email thread.
+        message_id (str): The unique identifier of the email message to be deleted.
+
+    Returns:
+        dict: A dictionary containing the status of the deletion operation.
+              Example: {"status": "success"} or {"status": "error", "error": "Error message"}
+    """
+    session = get_session(username=username, thread_id=thread_id)
+    gmail_toolkit = session.gmail_toolkit
+    try:
+        gmail_toolkit.delete_email(message_id=message_id)
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
 
 
 @tool
@@ -260,6 +287,7 @@ all_tools = [
     delete_email_scheduler_job_tool,
     get_userdetails_tool,
     search_gmails_tool,
+    delete_email_tool,
     get_current_dateandtime,
     is_weekend,
 ]
