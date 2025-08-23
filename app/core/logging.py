@@ -18,38 +18,35 @@ def _get_log_filename(log_folder_name: str) -> str:
 def setup_logging(
     log_type: Optional[str] = None, log_folder_name: Optional[str] = None
 ) -> logging.Logger:
-    # Clear duplicate handlers
     root_logger = logging.getLogger("Eibox")
 
-    # Formatter (now using module name instead of root)
+    # Clear duplicate handlers if any (important when re-running in dev)
+    if root_logger.hasHandlers():
+        root_logger.handlers.clear()
+
+    # Always allow all logs to propagate
+    root_logger.setLevel(logging.DEBUG)
+
     formatter = logging.Formatter(
         fmt="[%(asctime)s - %(name)s:%(filename)s:%(lineno)d - %(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # File handler
-    timestamp = "DATE-19-08-2025-TIME-1-06PM"
-    file_path = os.path.join(log_folder_name, f"{timestamp}.log")
+    # File handler (always DEBUG)
+    os.makedirs(log_folder_name, exist_ok=True)
+    file_path = os.path.join(log_folder_name, f"DATE-2025-08-23_TIME-21-29-30.log")
     fh = logging.FileHandler(file_path, encoding="utf-8")
+    fh.setLevel(logging.DEBUG)
     fh.setFormatter(formatter)
 
-    # Console handler
+    # Console handler (level based on log_type)
     ch = logging.StreamHandler()
+    ch_level = logging.DEBUG if log_type == "debug" else logging.INFO
+    ch.setLevel(ch_level)
     ch.setFormatter(formatter)
-
-    if log_type == "debug":
-        root_logger.setLevel(logging.DEBUG)
-        fh.setLevel(logging.DEBUG)
-        ch.setLevel(logging.DEBUG)
-    else:
-        root_logger.setLevel(logging.INFO)
-        fh.setLevel(logging.DEBUG)  # keep full logs in file
-        ch.setLevel(logging.INFO)
 
     root_logger.addHandler(fh)
     root_logger.addHandler(ch)
-
-    # Only for initial confirmation
 
     return root_logger
 
