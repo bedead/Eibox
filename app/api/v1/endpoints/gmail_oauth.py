@@ -127,14 +127,18 @@ async def gmail_oauth_callback(request: Request):
         )
         user_info = user_info_response.json()
 
+        # converting datetime to utc timezone and then calculating expires_in time in seconds
+        expiry = credentials.expiry
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+        expires_in: int = int((expiry - datetime.now(timezone.utc)).total_seconds())
+        
         account_data = GmailAccount(
             username=state_info["username"],
             email=user_info.get("email"),
             access_token=credentials.token,
             refresh_token=credentials.refresh_token,
-            expires_in=int(
-                (credentials.expiry - datetime.now(timezone.utc)).total_seconds()
-            ),
+            expires_in=expires_in,
             token_type="Bearer",
             scope=settings.GOOGLE_GMAIL_SCOPE,
         )
