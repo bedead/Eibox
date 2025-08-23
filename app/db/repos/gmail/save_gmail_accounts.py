@@ -20,6 +20,7 @@ def save_gmail_account(
             value=json.dumps([account.model_dump() for account in accounts]),
         )
         logger.debug(f"Saved the gmail_account data for {username}.")
+        return {"success": True}
 
     except Exception as e:
         logger.error(f"Error while storing gmail accounts: {str(e)}")

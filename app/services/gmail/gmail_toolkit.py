@@ -8,22 +8,10 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Callable
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
-from google.auth.transport.requests import Request
-from pydantic import BaseModel, EmailStr
 from app.core.logging import logger
+from app.schemas.gmail_account import GmailAccount
 from app.utils.common import get_gcp_client_id, get_gcp_client_secret
-
-
-class GmailAccount(BaseModel):
-    email: EmailStr
-    refresh_token: Optional[str]
-    access_token: str
-    expires_in: Optional[int]
-    token_type: Optional[str]
-    scope: Optional[List[str]]
-    client_id: Optional[str] = None  # Required for token refresh
-    client_secret: Optional[str] = None  # Required for token refresh
-
+from app.core.config import settings
 
 class GmailToolKit:
     def __init__(
@@ -177,10 +165,7 @@ class GmailToolKit:
                 client_id=get_gcp_client_id(),
                 client_secret=get_gcp_client_secret(),
                 scopes=self.gmail_account.scope
-                or [
-                    "https://www.googleapis.com/auth/gmail.readonly",
-                    "https://www.googleapis.com/auth/gmail.modify",
-                ],
+                or settings.GOOGLE_GMAIL_SCOPE
             )
 
             # Build the service

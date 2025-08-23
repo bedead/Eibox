@@ -7,6 +7,7 @@ class GmailAccount(BaseModel):
     Schema class for gmail account data storage.
     """
 
+    username: str
     email: EmailStr
     refresh_token: Optional[str]
     access_token: str
