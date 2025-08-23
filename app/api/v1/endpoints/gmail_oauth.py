@@ -132,7 +132,7 @@ async def gmail_oauth_callback(request: Request):
         if expiry.tzinfo is None:
             expiry = expiry.replace(tzinfo=timezone.utc)
         expires_in: int = int((expiry - datetime.now(timezone.utc)).total_seconds())
-        
+
         account_data = GmailAccount(
             username=state_info["username"],
             email=user_info.get("email"),
@@ -141,6 +141,7 @@ async def gmail_oauth_callback(request: Request):
             expires_in=expires_in,
             token_type="Bearer",
             scope=settings.GOOGLE_GMAIL_SCOPE,
+            token_last_refresh_time=datetime.now(),
         )
 
         save_result = add_gmail_account(
