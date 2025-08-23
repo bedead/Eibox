@@ -5,6 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     APP_NAME: str = "Eibox"
     APP_DESCIPTION: str = ""
+    APP_SUMMARY: str = ""
+    APP_VERSION: str = "0.1.0"
+
     REDIS_URL: str = ""  # TODO: read from secret env file
     JWT_SECRET: str = ""  # TODO: study and update
     JWT_ALGO: str = ""  # TODO: study and update
