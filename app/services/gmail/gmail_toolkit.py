@@ -490,6 +490,23 @@ class GmailToolKit:
             status["message"] = f"Error sending email: {str(e)}"
             self.logger.error(f"Error sending email: {str(e)}", exc_info=True)
             return status
+        
+    def delete_email(self, message_id: str):
+        """
+        Deletes an email by its message ID.
+
+        Args:
+            message_id (str): The unique identifier of the email message to be deleted.
+        """
+        try:
+            # Ensure we have a valid token before making API calls
+            self._ensure_valid_token()
+
+            self.service.users().messages().delete(userId="me", id=message_id).execute()
+            self.logger.debug(f"Email with ID {message_id} deleted successfully.")
+        except Exception as e:
+            self.logger.error(f"Error deleting email {message_id}: {str(e)}", exc_info=True)
+            raise RuntimeError(f"Failed to delete email {message_id}: {str(e)}")
 
 
 # Example usage
