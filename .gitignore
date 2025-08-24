@@ -13,6 +13,7 @@ nextagents
 .qodo
 redis_connection.json
 
+dev-requirements.txt
 thought_dump.txt
 
 # Ignore Python cache files

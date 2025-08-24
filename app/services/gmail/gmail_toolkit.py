@@ -164,8 +164,8 @@ class GmailToolKit:
                 token=self.gmail_account.access_token,
                 refresh_token=self.gmail_account.refresh_token,
                 token_uri="https://oauth2.googleapis.com/token",
-                client_id=None,
-                client_secret=None,
+                client_id=get_gcp_client_id(),
+                client_secret=get_gcp_client_secret(),
                 scopes=self.gmail_account.scope or settings.GOOGLE_GMAIL_SCOPE,
             )
 
@@ -490,7 +490,7 @@ class GmailToolKit:
             status["message"] = f"Error sending email: {str(e)}"
             self.logger.error(f"Error sending email: {str(e)}", exc_info=True)
             return status
-        
+
     def delete_email(self, message_id: str):
         """
         Deletes an email by its message ID.
@@ -505,7 +505,9 @@ class GmailToolKit:
             self.service.users().messages().delete(userId="me", id=message_id).execute()
             self.logger.debug(f"Email with ID {message_id} deleted successfully.")
         except Exception as e:
-            self.logger.error(f"Error deleting email {message_id}: {str(e)}", exc_info=True)
+            self.logger.error(
+                f"Error deleting email {message_id}: {str(e)}", exc_info=True
+            )
             raise RuntimeError(f"Failed to delete email {message_id}: {str(e)}")
 
 

@@ -1,6 +1,6 @@
 from typing import Dict, Tuple
 from fastapi import APIRouter, HTTPException, WebSocket
-from git import List
+from typing import List
 from langgraph.config import RunnableConfig
 from langchain_core.messages import AIMessageChunk
 from app.db.repos.gmail.save_refreshed_tokens import save_refreshed_tokens
