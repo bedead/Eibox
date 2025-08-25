@@ -11,7 +11,7 @@ class GmailAccount(BaseModel):
     username: str
     email: EmailStr
     refresh_token: str
-    token_last_refresh_time: Optional[datetime] = None
+    token_last_refresh_time: Optional[str] = None
     access_token: str
     expires_in: int
     token_type: Optional[str] = None
