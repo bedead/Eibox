@@ -141,7 +141,7 @@ async def gmail_oauth_callback(request: Request):
             expires_in=expires_in,
             token_type="Bearer",
             scope=settings.GOOGLE_GMAIL_SCOPE,
-            token_last_refresh_time=datetime.now(),
+            token_last_refresh_time=str(datetime.now()),
         )
 
         save_result = add_gmail_account(
