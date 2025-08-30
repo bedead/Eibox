@@ -55,7 +55,7 @@ def context_update(
             SEMANTIC_MEMORY_PROMPT.replace(
                 "{data}",
                 semantic_memory.value if semantic_memory else "",
-            ).replace("{context}", state["messages"] if state["messages"] else "")
+            ).replace("{context}", str(state["messages"]) if state["messages"] else "")
         )
 
         # updated_semantic_memory = clean_and_parse_ai_output(updated_semantic_memory.content)
@@ -74,7 +74,7 @@ def context_update(
                 episodic_memory.value if episodic_memory else "",
             ).replace(
                 "{context}",
-                state["messages"][-1].content if state["messages"] else "",
+                str(state["messages"]) if state["messages"] else "",
             )
         )
 
