@@ -3,11 +3,13 @@ from fastapi import APIRouter, HTTPException, WebSocket
 from typing import List
 from langgraph.config import RunnableConfig
 from langchain_core.messages import AIMessageChunk
+from app.core.config import settings
 from app.db.repos.gmail.save_refreshed_tokens import save_refreshed_tokens
 from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from app.schemas.gmail_account import GmailAccount
 from app.services.agents.chatbot_agent import ChatAgent, ChatbotState
 from app.services.gmail.gmail_toolkit import GmailToolKit
+from app.services.job_scheduler.jobs import start_email_scheduler_job
 from app.services.session.delete_session import delete_session
 from app.services.session.get_session import get_session
 from app.services.session.store_session import store_session
@@ -23,6 +25,8 @@ def call_graph(user_input: str, username: str, thread_id: str):
     for chunk in ChatAgent.stream(
         input={
             "messages": [{"role": "user", "content": user_input}],
+            "semantic_memory": "",
+            "episodic_memory": "",
         },
         config={
             "configurable": {
@@ -47,9 +51,13 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
     await websocket.accept()
     logger.debug(f"Websocket connection of user - {username} is opened.")
 
-    # job = start_email_scheduler_job(
-    #     username=username, user_id=user_id, thread_id=thread_id, interval=30
-    # )
+    # Run email fetch scheduler job if enabled fron configs
+    job = None  # Empty job to avoid reference before assignment error
+    if settings.RUN_JOB_SCHEDULER:
+        job = start_email_scheduler_job(
+            username=username, thread_id=thread_id, interval=30
+        )
+
     session = get_session(username=username, thread_id=thread_id)
     if not session:
         logger.debug(
@@ -67,12 +75,13 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
                 username=username,
             )
 
-        # store session
+        # store session with whatever data is available
         store_session(
             websocket=websocket,
             username=username,
             thread_id=thread_id,
             gmail_toolkit=gmail_toolkit,
+            session_job=job if job else None,
         )
 
     try:

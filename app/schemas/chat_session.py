@@ -11,14 +11,13 @@ class ChatSession:
         websocket: WebSocket,
         username: str,
         thread_id: str,
-        user_id: str = None,
         toolkit: GmailToolKit = None,
-        job=None,
+        session_job=None,
+        extra_data: Dict[str, Any] = None,
     ):
         self.websocket: WebSocket = websocket
         self.username: str = username
-        self.user_id: str = user_id
         self.thread_id: str = thread_id
         self.gmail_toolkit: GmailToolKit = toolkit
-        self.job = job
-        self.extra_data: Dict[str, Any] = {}  # <-- free space for anything else
+        self.session_job = session_job
+        self.extra_data: Dict[str, Any] = extra_data
