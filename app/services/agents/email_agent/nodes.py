@@ -6,8 +6,7 @@ from app.utils._prompts import (
     GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT,
 )
 from app.services.agents.email_agent.states import EmailState
-from langgraph.graph import END
-from langgraph.types import interrupt, Command
+from langgraph.types import Command
 from langchain_core.runnables import RunnableConfig
 from langgraph.store.base import BaseStore
 

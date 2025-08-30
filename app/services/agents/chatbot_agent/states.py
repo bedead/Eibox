@@ -7,9 +7,11 @@ class ChatbotState(TypedDict):
     Represents the state of a main agent in a graph.
     """
 
+    memory_update_counter: int = 3
+
     # contextual information
-    semantic_memory: Optional[str]
-    episodic_memory: Optional[str]
+    semantic_memory: Optional[str] = ""
+    episodic_memory: Optional[str] = ""
 
     # Tracking workflow message history
     messages: Annotated[list, add_messages]

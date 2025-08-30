@@ -9,6 +9,7 @@ from langgraph.store.base import BaseStore
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.runnables import RunnableConfig
 from langchain.chat_models import init_chat_model
+from app.core.config import settings
 from app.db.redis import db_store
 from app.services.agents.chatbot_agent.tools import all_tools
 from app.utils._prompts import (
@@ -20,7 +21,7 @@ from app.core.logging import logger
 
 
 graph_builder = StateGraph(ChatbotState)
-llm = init_chat_model(model="google_genai:gemini-2.0-flash", temperature=0.45)
+llm = init_chat_model(model="google_genai:gemini-2.0-flash", temperature=0.6)
 model_with_tools = llm.bind_tools(all_tools)
 namespace_for_memory = ("auth", "user")
 
@@ -28,102 +29,114 @@ namespace_for_memory = ("auth", "user")
 def context_update(
     state: ChatbotState, store: BaseStore, config: RunnableConfig
 ) -> Command:
-    # Data extraction from config
-    username = config["configurable"].get("username", "satyam")
-    # thread_id = config["configurable"].get("thread_id", "test_thread")
 
-    semantic_memory_key = f"user-semantic-memory:{username}"
-    episodic_memory_key = f"user-episodic-memory:{username}"
+    # Get memory update counter from state
+    memory_update_counter: int = state.get("memory_update_counter", 3)
+    if memory_update_counter == 0:
+        # Data extraction from config
+        username = config["configurable"].get("username", "satyam")
+        # thread_id = config["configurable"].get("thread_id", "test_thread")
 
-    # Get past memory
-    semantic_memory = store.get(namespace=namespace_for_memory, key=semantic_memory_key)
-    episodic_memory = store.get(namespace=namespace_for_memory, key=episodic_memory_key)
+        semantic_memory_key = f"user-semantic-memory:{username}"
+        episodic_memory_key = f"user-episodic-memory:{username}"
 
-    llm = init_chat_model(model="google_genai:gemini-2.0-flash", temperature=0.45)
-    # Call LLM if semantic memory is available
-    # update data
-    updated_semantic_memory = llm.invoke(
-        SEMANTIC_MEMORY_PROMPT.replace(
-            "{data}",
-            semantic_memory.value if semantic_memory else "",
-        ).replace(
-            "{context}", state["messages"][-1].content if state["messages"] else ""
+        # Get past memory
+        semantic_memory = store.get(
+            namespace=namespace_for_memory, key=semantic_memory_key
         )
-    )
-
-    # updated_semantic_memory = clean_and_parse_ai_output(updated_semantic_memory.content)
-    # print("Updated Semantic Memory:", updated_semantic_memory)
-
-    # store updated semantic memory
-    store.put(
-        namespace=namespace_for_memory,
-        key=semantic_memory_key,
-        value=updated_semantic_memory.content,
-    )
-
-    updated_episodic_memory = llm.invoke(
-        EPISODIC_MEMORY_PROMPT.replace(
-            "{data}",
-            episodic_memory.value if episodic_memory else "",
-        ).replace(
-            "{context}",
-            state["messages"][-1].content if state["messages"] else "",
+        episodic_memory = store.get(
+            namespace=namespace_for_memory, key=episodic_memory_key
         )
-    )
 
-    # store updated episodic memory
-    store.put(
-        namespace=namespace_for_memory,
-        key=episodic_memory_key,
-        value=updated_episodic_memory.content,
-    )
+        llm = init_chat_model(model="google_genai:gemini-1.5-flash", temperature=0.6)
+        # Call LLM if semantic memory is available
+        # update data
+        updated_semantic_memory = llm.invoke(
+            SEMANTIC_MEMORY_PROMPT.replace(
+                "{data}",
+                semantic_memory.value if semantic_memory else "",
+            ).replace("{context}", state["messages"] if state["messages"] else "")
+        )
 
-    return Command(
-        update={
-            "semantic_memory": (
-                updated_semantic_memory if updated_semantic_memory else ""
-            ),
-            "episodic_memory": (
-                updated_episodic_memory if updated_episodic_memory else ""
-            ),
-        }
-    )
+        # updated_semantic_memory = clean_and_parse_ai_output(updated_semantic_memory.content)
+        # print("Updated Semantic Memory:", updated_semantic_memory)
+
+        # store updated semantic memory
+        store.put(
+            namespace=namespace_for_memory,
+            key=semantic_memory_key,
+            value=updated_semantic_memory.content,
+        )
+
+        updated_episodic_memory = llm.invoke(
+            EPISODIC_MEMORY_PROMPT.replace(
+                "{data}",
+                episodic_memory.value if episodic_memory else "",
+            ).replace(
+                "{context}",
+                state["messages"][-1].content if state["messages"] else "",
+            )
+        )
+
+        # store updated episodic memory
+        store.put(
+            namespace=namespace_for_memory,
+            key=episodic_memory_key,
+            value=updated_episodic_memory.content,
+        )
+
+        return Command(
+            update={
+                "semantic_memory": (
+                    updated_semantic_memory if updated_semantic_memory else ""
+                ),
+                "episodic_memory": (
+                    updated_episodic_memory if updated_episodic_memory else ""
+                ),
+                "memory_update_counter": 3,
+            }
+        )
+
+    return Command(update={"memory_update_counter": memory_update_counter - 1})
 
 
 def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Command:
-    # fetching data from storage if available
 
-    # get username and thread_id from chat config
-    username = config["configurable"].get("username")
-    thread_id = config["configurable"].get("thread_id")
+    # If job scheduler is running, get the mail data pre-fetched by background task and stored in redis store
+    if settings.RUN_JOB_SCHEDULER:
+        # get username and thread_id from chat config
+        username = config["configurable"].get("username")
+        thread_id = config["configurable"].get("thread_id")
 
-    # create unqiue key to get the data
-    data_key = f"user-data:{username}:{thread_id}"
-    unread_key = f"user-unread_mails:{username}:{thread_id}"
+        # create unqiue key to get the data
+        data_key = f"user-data:{username}:{thread_id}"
+        unread_key = f"user-unread_mails:{username}:{thread_id}"
 
-    # get data from store
-    mail_data_list = store.get(namespace=namespace_for_memory, key=data_key)
-    unread_mails = store.get(namespace=namespace_for_memory, key=unread_key)
+        # get data from store
+        mail_data_list = store.get(namespace=namespace_for_memory, key=data_key)
+        unread_mails_count = store.get(namespace=namespace_for_memory, key=unread_key)
 
-    # Extract values or set defaults
-    mail_data_list: List[Dict[str, Any]] = (
-        mail_data_list.value if mail_data_list else []
-    )
-    unread_mails: int = unread_mails.value if unread_mails else 0
-    semantic_memory = state["semantic_memory"]
-    episodic_memory = state["episodic_memory"]
+        # Extract values or set defaults
+        mail_data_list: List[Dict[str, Any]] = (
+            mail_data_list.value if mail_data_list else []
+        )
+        unread_mails_count: int = unread_mails_count.value if unread_mails_count else 0
 
-    unread_mail_data_list = []
-    for i in mail_data_list:
-        if i.get("unread"):
-            # print(f"Skipping read mail: {i.get('unread')}")
-            unread_mail_data_list.append(i)
-    logger.debug(f"Unread mail data list: {unread_mail_data_list}")
-    logger.debug(f"Unread mails: {unread_mails}")
+        unread_mail_data_list = []
+        for i in mail_data_list:
+            if i.get("unread"):
+                # print(f"Skipping read mail: {i.get('unread')}")
+                unread_mail_data_list.append(i)
+        logger.debug(f"Unread mail data list: {unread_mail_data_list}")
+        logger.debug(f"Unread mails: {unread_mails_count}")
+
+    # Retrive memory from state
+    semantic_memory: str = state["semantic_memory"]
+    episodic_memory: str = state["episodic_memory"]
 
     system_instruction = CHATBOT_SYSTEM_INSTRUCTION.format(
-        unread_mails=unread_mails,
-        mail_data_list=unread_mail_data_list,
+        unread_mails_count=unread_mails_count if settings.RUN_JOB_SCHEDULER else 0,
+        mail_data_list=unread_mail_data_list if settings.RUN_JOB_SCHEDULER else [],
         semantic_memory=semantic_memory if semantic_memory else "",
         episodic_memory=episodic_memory if episodic_memory else "",
     )
@@ -132,6 +145,7 @@ def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Co
         SystemMessage(content=system_instruction),
     ] + state["messages"]
 
+    # tool llm model call
     message = model_with_tools.invoke(messages)
     if isinstance(message, dict):
         message = message.get("messages")
