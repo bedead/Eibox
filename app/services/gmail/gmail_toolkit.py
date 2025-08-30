@@ -169,6 +169,8 @@ class GmailToolKit:
                 scopes=self.gmail_account.scope or settings.GOOGLE_GMAIL_SCOPE,
             )
 
+            print(f"self.token_expires_at: {self.token_expires_at}")
+
             # Build the service
             self.service = build("gmail", "v1", credentials=creds)
             self.logger.debug(
