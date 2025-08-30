@@ -12,7 +12,6 @@ SEMANTIC_MEMORY_PROMPT = dedent(
     <output_example>
     {
         "full name": "satyam mishra", 
-        "username": "satyam", 
         "emails": ["xyz@gmail.com","others@gmail.com"],
         "works at": "Google",
         "lcoation": "India, MP",
@@ -69,33 +68,13 @@ CHATBOT_SYSTEM_INSTRUCTION = dedent(
     <mail_data>
     This email data has been received via a background task — the user is not yet aware of it.
 
-    unread_mails: {unread_mails}
+    unread_mails_count: {unread_mails_count}
     all_mails_data: {mail_data_list}
     </mail_data>
     """
 )
 
 ## LLM RESPONSE GENERATE
-
-MAIL_SUMMARY_PROMPT = dedent(
-    """
-    Summarize the given email data into a concise format. 
-    The email may contain the sender, subject, body, date, and other metadata. 
-    The body and subject can be in HTML, Markdown, or plain text. Convert them to plain text before making a summary.
-
-    Make sure that the summary is verbalized in a way that is easy to understand, doesn't involve complex vocabulary and captures the main points of the email.
-    The summary should be in a single paragraph, which can be narrated in a way that sounds natural and human-like.
-    
-    Example of ways how you can start with summary(Can you use more similar ways to start):
-    Hey, you have got a mail from ...
-    (If something seems important): It's seems there is an important mail from ...
-    (If something seems not important): It's seems there is a spam mail from ...
-    (Mail from Friend/Relative/Family/Boss/etc): There's a mail from your friend/relative/etc ...
-    
-    (Additional information): You can you add emotional/scenario/etc judgment of the mail in the beginning or end of the summary. 
-    """
-)
-
 
 GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT = dedent(
     """
