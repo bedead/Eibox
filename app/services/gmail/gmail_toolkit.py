@@ -110,7 +110,7 @@ class GmailToolKit:
             # Update the account with new tokens
             self.gmail_account.access_token = token_data["access_token"]
             self.gmail_account.expires_in = token_data.get("expires_in", 3600)
-            self.gmail_account.token_last_refresh_time = datetime.now()
+            self.gmail_account.token_last_refresh_time = str(datetime.now())
 
             # Update refresh token if a new one is provided
             if "refresh_token" in token_data:
