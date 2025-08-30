@@ -35,7 +35,12 @@ app.add_middleware(
 )
 
 # API Routers
-app.include_router(cron_router, prefix="/cron", tags=["cron"])
+
+# Include cron router (containing schedular start/stop/etc) only if scheduler is enabled
+if settings.SCHEDULER_API_ENABLED:
+    app.include_router(cron_router, prefix="/cron", tags=["cron"])
+
+
 app.include_router(auth_router, prefix="/auth", tags=["auth"])
 app.include_router(oauth_router, prefix="/oauth", tags=["oauth"])
 app.include_router(websocket_router, prefix="/ws", tags=["chatbot", "websocket"])
