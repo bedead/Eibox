@@ -1,7 +1,10 @@
-from contextlib import asynccontextmanager
+# Standard Library
+
+# Third Party Packages
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+# Project Packages
 from app.core.middleware import add_middleware
 from app.core.config import settings
 from app.api.v1.routers import (
@@ -11,7 +14,6 @@ from app.api.v1.routers import (
     websocket_router,
     test_router,
 )
-
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -34,14 +36,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# API Routers
+# API ROUTERS WITH VERSIONING
+API_V1_PREFIX = "/v1"
 
 # Include cron router (containing schedular start/stop/etc) only if scheduler is enabled
 if settings.SCHEDULER_API_ENABLED:
-    app.include_router(cron_router, prefix="/cron", tags=["cron"])
+    app.include_router(cron_router, prefix=f"{API_V1_PREFIX}/cron", tags=["cron"])
 
+app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["auth"])
+app.include_router(oauth_router, prefix=f"{API_V1_PREFIX}/oauth", tags=["oauth"])
+app.include_router(
+    websocket_router, prefix=f"{API_V1_PREFIX}/chatbot", tags=["chatbot", "websocket"]
+)
+app.include_router(test_router, prefix=f"{API_V1_PREFIX}/test", tags=["testing"])
 
-app.include_router(auth_router, prefix="/auth", tags=["auth"])
-app.include_router(oauth_router, prefix="/oauth", tags=["oauth"])
-app.include_router(websocket_router, prefix="/ws", tags=["chatbot", "websocket"])
-app.include_router(test_router, prefix="/test", tags=["testing"])
+# EXAMPLE FOR FUTURE V2
+# from app.api.v2.routers import some_new_router
+# API_V2_PREFIX = "/v2"
+# app.include_router(some_new_router, prefix=f"{API_V2_PREFIX}/some-feature", tags=["new-feature"])

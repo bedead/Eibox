@@ -24,7 +24,7 @@ class GoogleAccountRequest(BaseModel):
     username: str
 
 
-@router.post("/get_google_account/v1")
+@router.post("/get_google_account/")
 def get_google_account(token: GoogleAccountRequest):
     try:
         return get_gmail_account(
@@ -35,7 +35,7 @@ def get_google_account(token: GoogleAccountRequest):
         raise HTTPException(status_code=500, detail=f"Failed to save tokens: {str(e)}")
 
 
-@router.websocket("/chatbot/v1/{username}/{thread_id}")
+@router.websocket("/chatbot/{username}/{thread_id}")
 async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: str):
     await websocket.accept()
     logger.debug(f"Websocket connection of user - {username} is opened.")
@@ -80,7 +80,7 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
         await websocket.close()
 
 
-@router.post("/chatbot/v1/close/{username}/{thread_id}")
+@router.post("/chatbot/close/{username}/{thread_id}")
 async def close_chat_websocket(username: str, thread_id: str):
     session = get_session(username, thread_id)
     websocket = session.websocket
@@ -108,3 +108,11 @@ async def close_chat_websocket(username: str, thread_id: str):
         raise HTTPException(
             status_code=500, detail=f"Failed to close websocket: {str(e)}"
         )
+
+
+@router.get("/health")
+def health_check():
+    """
+    Health check endpoint to verify the service is running.
+    """
+    return {"status": "ok", "message": "Auth service is running"}

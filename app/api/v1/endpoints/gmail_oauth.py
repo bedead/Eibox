@@ -7,6 +7,10 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from app.services.gmail.gmail_toolkit import GmailAccount
 from app.core.config import settings
+from app.utils._oauth_templates import (
+    CALLBACK_ERROR_TEMPLATE,
+    CALLBACK_SUCCESS_TEMPLATE,
+)
 from app.utils.common import (
     get_gcp_client_id,
     get_gcp_client_secret,
@@ -21,17 +25,6 @@ router = APIRouter()
 namespace_for_memory = ("auth", "user")
 
 oauth_states = {}
-
-CALLBACK_SUCCESS_TEMPLATE = """
-<h2>✅ Gmail Connected!</h2>
-<p>Usernmae: {{username}}</p>
-<p>Email: {{email}}</p>
-"""
-
-CALLBACK_ERROR_TEMPLATE = """
-<h2>❌ Error</h2>
-<p>{{error}}</p>
-"""
 
 
 @router.get("/gmail/start")

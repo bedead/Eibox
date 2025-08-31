@@ -17,7 +17,7 @@ router = APIRouter()
 namespace_for_memory = ("auth", "user")
 
 
-@router.post("/gmail/start/v1")
+@router.post("/gmail/start/")
 def start_gmail_cron(input: CronJobSchema):
     # get gmail_account data create gmail_toolkit
     data: List[GmailAccount] = get_gmail_account(
@@ -40,7 +40,7 @@ def start_gmail_cron(input: CronJobSchema):
     # return job
 
 
-@router.post("/gmail/delete/v1")
+@router.post("/gmail/delete/")
 def delete_gmail_cron(input: CronJobSchema):
     # delete session
     delete_session(username=input.username, thread_id=input.thread_id)
