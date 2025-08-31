@@ -15,29 +15,12 @@ router = APIRouter()
 namespace_for_memory = ("auth", "user")
 
 
-@router.post("/oauth_gmail_access_token/v1")
-def handle_google_oauth(token: GoogleAccessTokens):
-    try:
-        add_gmail_account(token=token, namespace_for_memory=namespace_for_memory)
-
-        return {"message": "Tokens saved successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save tokens: {str(e)}")
-
-
-@router.post("/register/v1")
+@router.post("/register/")
 def register_user(user: RegisterSchema):
     return ru(user, namespace_for_memory)
 
 
-@router.post("/login/v1")
+@router.post("/login/")
 def login_user(user: LoginSchema):
     return lu(user, namespace_for_memory)
 
-
-@router.get("/health")
-def health_check():
-    """
-    Health check endpoint to verify the service is running.
-    """
-    return {"status": "ok", "message": "Auth service is running"}

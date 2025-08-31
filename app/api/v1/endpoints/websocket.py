@@ -46,7 +46,7 @@ def call_graph(user_input: str, username: str, thread_id: str):
                 yield message_chunk.content
 
 
-@router.websocket("/chatbot/v1/{username}/{thread_id}")
+@router.websocket("/open/{username}/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str):
     await websocket.accept()
     logger.debug(f"Websocket connection of user - {username} is opened.")
@@ -111,7 +111,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
         await websocket.close()
 
 
-@router.post("/chatbot/v1/close/{username}/{thread_id}")
+@router.post("/close/{username}/{thread_id}")
 async def close_websocket(username: str, thread_id: str):
     session = get_session(username, thread_id)
     websocket = session.websocket
