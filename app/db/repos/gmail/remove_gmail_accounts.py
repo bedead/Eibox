@@ -1,5 +1,5 @@
-from app.schemas.google_access_token import GoogleAccessTokens
+from typing import Tuple
 
 
-def remove_gmail_account(token: GoogleAccessTokens, namespace_for_memory: str):
+def remove_gmail_account(username: str, namespace_for_memory: Tuple[str, str]):
     pass

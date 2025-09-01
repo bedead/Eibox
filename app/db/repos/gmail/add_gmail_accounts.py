@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Tuple
 
 from fastapi import HTTPException
 from app.schemas.gmail_account import GmailAccount
@@ -7,9 +7,8 @@ from .save_gmail_accounts import save_gmail_account
 from .get_gmail_accounts import get_gmail_account
 
 
-def add_gmail_account(new_account: GmailAccount, namespace_for_memory: str):
+def add_gmail_account(new_account: GmailAccount, namespace_for_memory: Tuple[str, str]):
     username = new_account.username
-    key = f"user-gmail-accounts:{username}"
 
     try:
         # Load existing accounts (if any)

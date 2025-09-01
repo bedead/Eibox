@@ -8,7 +8,7 @@ from app.core.logging import logger
 
 
 # TODO: #12 update user_key by adding user_id also, by taking optional user_id as input field.
-def login_user(user: LoginSchema, namespace_for_memory: tuple):
+def login_user(user: LoginSchema, namespace_for_memory: tuple) -> Dict[str, any]:
     """
     Log in a user with the provided user schema.
     """
