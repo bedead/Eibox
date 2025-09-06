@@ -1,49 +1,21 @@
-from typing import Dict, Tuple
+from typing import Dict, Generator, Tuple
 from fastapi import APIRouter, HTTPException, WebSocket
 from typing import List
-from langgraph.config import RunnableConfig
-from langchain_core.messages import AIMessageChunk
 from app.core.config import settings
 from app.db.repos.gmail.save_refreshed_tokens import save_refreshed_tokens
 from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from app.schemas.gmail_account import GmailAccount
-from app.services.agents.chatbot_agent import ChatAgent, ChatbotState
 from app.services.gmail.gmail_toolkit import GmailToolKit
 from app.services.job_scheduler.jobs import start_email_scheduler_job
 from app.services.session.delete_session import delete_session
 from app.services.session.get_session import get_session
 from app.services.session.store_session import store_session
-from app.utils._api_helper import _to_async_gen
+from app.utils._api_helper import _to_async_gen, call_graph
 from app.core.logging import logger
 
 router = APIRouter()
 
 namespace_for_memory = ("auth", "user")
-
-
-def call_graph(user_input: str, username: str, thread_id: str):
-    for chunk in ChatAgent.stream(
-        input={
-            "messages": [{"role": "user", "content": user_input}],
-            "semantic_memory": "",
-            "episodic_memory": "",
-        },
-        config={
-            "configurable": {
-                "thread_id": thread_id,
-                "username": username,
-            }
-        },
-        stream_mode="messages",
-        debug=True,
-    ):
-        if isinstance(chunk, tuple):
-            message_chunk, metadata = chunk
-            if (
-                isinstance(message_chunk, AIMessageChunk)
-                and metadata["langgraph_node"] == "chatbot"
-            ):
-                yield message_chunk.content
 
 
 @router.websocket("/open/{username}/{thread_id}")
@@ -87,18 +59,26 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
     try:
         while True:
             message = await websocket.receive_text()
-            ai_message_gen = call_graph(
-                user_input=message,
-                username=username,
-                thread_id=thread_id,
-            )
-            sent = False
-            async for chunk in _to_async_gen(ai_message_gen):
-                if chunk:
+
+            # Decide whether to stream or not
+            streaming = False
+            if streaming:
+                for chunk in call_graph(
+                    user_input=message,
+                    username=username,
+                    thread_id=thread_id,
+                    streaming=streaming,
+                ):
                     await websocket.send_text(chunk)
-                    sent = True
-            if not sent:
-                await websocket.send_text("[ERROR] No response from AI")
+            else:
+                ai_output = call_graph(
+                    user_input=message,
+                    username=username,
+                    thread_id=thread_id,
+                    streaming=streaming,
+                )
+                logger.debug(f"AI Output: {ai_output}")
+                await websocket.send_text(ai_output)
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}", exc_info=True)
         try:
