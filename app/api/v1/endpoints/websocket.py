@@ -10,7 +10,7 @@ from app.services.job_scheduler.jobs import start_email_scheduler_job
 from app.services.session.delete_session import delete_session
 from app.services.session.get_session import get_session
 from app.services.session.store_session import store_session
-from app.utils._api_helper import _to_async_gen, call_graph
+from app.utils._api_helper import call_graph
 from app.core.logging import logger
 
 router = APIRouter()

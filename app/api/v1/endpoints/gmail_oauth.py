@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 import requests
 from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
+from app.db.repos.auth.update_user_data import update_user_data as uud
 from google_auth_oauthlib.flow import Flow
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -141,9 +142,17 @@ async def gmail_oauth_callback(request: Request):
             account_data, namespace_for_memory=namespace_for_memory
         )
 
+        gmail_user_data_update_result = uud(
+            username=account_data.username,
+            namespace_for_memory=namespace_for_memory,
+            app_settings={
+                "connected_gmail_accounts_email": [account_data.email],
+            },
+        )
+
         oauth_states[state]["email"] = user_info.get("email")
 
-        if save_result["success"]:
+        if save_result["success"] and gmail_user_data_update_result["success"]:
             oauth_states[state]["completed"] = True
 
             return HTMLResponse(

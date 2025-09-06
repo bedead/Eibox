@@ -1,0 +1,66 @@
+from datetime import datetime
+from fastapi import HTTPException
+from typing import Any, Dict, Optional
+from app.schemas.user_model import UserModel
+from app.core.logging import logger
+from app.db.redis import db_store
+from app.utils.common import deep_merge_dicts, safe_json_parse
+
+
+def update_user_data(
+    username: str,
+    namespace_for_memory: tuple,
+    full_name: Optional[str] = None,
+    app_settings: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """
+    Safely update user details in the database with flexible app_settings.
+    """
+    user_key = f"user-auth:{username}"
+    try:
+        # Retrieve existing user data
+        record = db_store.get(namespace=namespace_for_memory, key=user_key)
+        raw_data = record.value if record and record.value else None
+
+        if not raw_data:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        logger.debug(f"User details found for username: {username}")
+
+        existing_data = safe_json_parse(raw_data, default={})
+
+        # Merge updates without overwriting unspecified fields
+        updated_data = {**existing_data}
+
+        if full_name is not None:
+            updated_data["full_name"] = full_name
+
+        # Merge app_settings dynamically
+        if app_settings:
+            updated_data["app_settings"] = deep_merge_dicts(
+                updated_data.get("app_settings", {}), app_settings
+            )
+
+        updated_data["account_details_updated"] = str(datetime.now())
+
+        # Validate via Pydantic
+        user_data = UserModel(**updated_data)
+        # logger.debug(f"Updated User Model Data: {user_data}")
+
+        # Store back in the database
+        db_store.put(
+            namespace=namespace_for_memory,
+            key=user_key,
+            value=user_data.model_dump_json(),
+            index=False,
+        )
+
+        return {
+            "success": 200,
+            "message": "User details updated successfully",
+            "updated_data": user_data.model_dump(),
+        }
+
+    except Exception as e:
+        logger.error(f"Error updating user data: {e}, exc_info=True)")
+        raise HTTPException(status_code=500, detail=f"Error updating user data: {e}")
