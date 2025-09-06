@@ -1,11 +1,13 @@
 import json
-from typing import List
+from typing import List, Tuple
 from fastapi import HTTPException
 from app.db.redis import db_store
 from app.schemas.gmail_account import GmailAccount
 
 
-def get_gmail_account(username: str, namespace_for_memory: str) -> List[GmailAccount]:
+def get_gmail_account(
+    username: str, namespace_for_memory: Tuple[str, str]
+) -> List[GmailAccount]:
     key = f"user-gmail-accounts:{username}"
     try:
         raw = db_store.get(

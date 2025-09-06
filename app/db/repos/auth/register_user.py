@@ -1,11 +1,12 @@
+from datetime import datetime
 from fastapi import HTTPException
 from typing import Any, Dict
 from app.utils._api_helper import _hash_password
-from app.schemas.register import RegisterSchema
+from app.schemas.user_model import UserModel
 from app.db.redis import db_store
 
 
-def register_user(user: RegisterSchema, namespace_for_memory: tuple) -> Dict[str, Any]:
+def register_user(user: UserModel, namespace_for_memory: tuple) -> Dict[str, Any]:
     """
     Register a new user with the provided user schema.
     """

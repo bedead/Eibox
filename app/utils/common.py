@@ -71,3 +71,60 @@ def clean_and_parse_ai_output(text: str):
     except json.JSONDecodeError as e:
         logger.error(f"JSON parsing error: {e}", exc_info=True)
         return None
+
+
+def deep_merge_dicts(original: dict, updates: dict) -> dict:
+    """Recursively merge updates into original dict. Append to lists instead of overwriting."""
+    for key, value in updates.items():
+        if key in original:
+            if isinstance(original[key], dict) and isinstance(value, dict):
+                # Merge nested dicts
+                original[key] = deep_merge_dicts(original[key], value)
+            elif isinstance(original[key], list) and isinstance(value, list):
+                # Append unique values to lists
+                for v in value:
+                    if v not in original[key]:
+                        original[key].append(v)
+            else:
+                # Overwrite scalars
+                original[key] = value
+        else:
+            original[key] = value
+    return original
+
+
+from typing import Any, Union
+
+
+def safe_json_parse(data: Any, *, default: Any = None) -> Union[dict, list, Any]:
+    """
+    Universal JSON parser that safely converts strings to Python objects (dict, list, etc.).
+
+    - If `data` is already a dict/list, returns it as-is.
+    - If `data` is a JSON string, parses it.
+    - If parsing fails, returns `default` (defaults to original data).
+    - Works recursively for nested JSON strings (if needed).
+    """
+    # If already a Python object, just return
+    if isinstance(data, (dict, list)):
+        return data
+
+    # If None or empty, return default
+    if data is None:
+        return default
+
+    # Try parsing JSON string
+    if isinstance(data, str):
+        try:
+            parsed = json.loads(data)
+            # Recursively parse if there are nested JSON strings
+            if isinstance(parsed, dict):
+                return {k: safe_json_parse(v, default=v) for k, v in parsed.items()}
+            elif isinstance(parsed, list):
+                return [safe_json_parse(v, default=v) for v in parsed]
+            return parsed
+        except json.JSONDecodeError:
+            return default if default is not None else data
+
+    # For other datatypes (int, float, bool, etc.)
+    return data

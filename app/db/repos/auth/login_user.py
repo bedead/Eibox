@@ -5,10 +5,11 @@ from app.utils._api_helper import _hash_password
 from app.schemas.login import LoginSchema
 from app.db.redis import db_store
 from app.core.logging import logger
+from app.utils.common import safe_json_parse
 
 
 # TODO: #12 update user_key by adding user_id also, by taking optional user_id as input field.
-def login_user(user: LoginSchema, namespace_for_memory: tuple):
+def login_user(user: LoginSchema, namespace_for_memory: tuple) -> Dict[str, any]:
     """
     Log in a user with the provided user schema.
     """
@@ -23,8 +24,8 @@ def login_user(user: LoginSchema, namespace_for_memory: tuple):
             logger.debug(f"404: User not found")
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Assuming data is a dictionary with a 'password' field
-        data: Dict = json.loads(data.value)
+        # Paring the safe josn values from  nested redis object
+        data = safe_json_parse(data.value)
 
         # Check if the provided password matches the stored hashed password
         if data.get("password") != _hash_password(user.password):

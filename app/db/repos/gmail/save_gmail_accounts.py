@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Tuple
 from fastapi import HTTPException
 from app.db.redis import db_store
 from app.schemas.gmail_account import GmailAccount
@@ -7,7 +7,7 @@ from app.core.logging import logger
 
 
 def save_gmail_account(
-    username: str, accounts: List[GmailAccount], namespace_for_memory: str
+    username: str, accounts: List[GmailAccount], namespace_for_memory: Tuple[str, str]
 ):
     # This function should save the tokens to the database or any storage
     # db_store.put()
