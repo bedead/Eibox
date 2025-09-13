@@ -7,11 +7,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "Eibox"
     APP_DESCIPTION: str = ""
     APP_SUMMARY: str = ""
-    APP_VERSION: str = "0.1.0"
+    APP_VERSION: str = "0.1.1"
 
     # API details
     # TODO: Use this API prefix in all routers and remove the existing hardcoded prefixes in the specific routers
     API_V1_STR: str = "/api/v1"
+    API_DEV_SERVER: bool = True  # Turn False if want to use PRODUCTIOn SERVER URL
 
     # Storage config details
     REDIS_URL: str = ""  # TODO: read from secret env file
