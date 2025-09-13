@@ -89,7 +89,14 @@ class GmailToolKit:
             else:
                 if expiry.tzinfo is None:
                     expiry = expiry.replace(tzinfo=timezone.utc)
-                self.gmail_account.expires_in = max(0, int((expiry.astimezone(timezone.utc) - datetime.now(timezone.utc)).total_seconds()))
+                self.gmail_account.expires_in = max(
+                    0,
+                    int(
+                        (
+                            expiry.astimezone(timezone.utc) - datetime.now(timezone.utc)
+                        ).total_seconds()
+                    ),
+                )
 
             self.gmail_account.token_last_refresh_time = str(datetime.now())
             add_gmail_account(
@@ -157,7 +164,7 @@ class GmailToolKit:
 
     def check_emails(
         self,
-        from_date: Optional[str] = None,  # Format: "d/m/yyyy"
+        from_date: Optional[str] = None,
         to_date: Optional[str] = None,
         query: Optional[str] = None,
         subject: Optional[str] = None,
@@ -168,88 +175,97 @@ class GmailToolKit:
         is_important: Optional[bool] = None,
         has_attachment: Optional[bool] = None,
         filename: Optional[str] = None,
-        larger_than: Optional[str] = None,  # e.g., "5M", "100K"
-        category: Optional[str] = None,  # e.g., "promotions", "primary"
-        label_ids: Optional[List[str]] = None,  # e.g., ["INBOX", "UNREAD"]
-        include_spam: bool = False,
-        include_trash: bool = False,
+        larger_than: Optional[str] = None,
+        categories: Optional[List[str]] = None,  # ["promotions", "primary"]
+        labels: Optional[List[str]] = None,  # ["INBOX", "UNREAD", "CATEGORY_UPDATES"]
+        locations: Optional[List[str]] = None,  # ["in:spam", "in:trash", "in:inbox"]
+        extra_filters: Optional[List[str]] = None,  # ["has:drive", "is:snoozed"]
         max_results: int = 10,
         page_token: Optional[str] = None,
     ) -> List[dict]:
         """
-        Fetches emails from the user's Gmail inbox using advanced search filters.
+        Fetch emails from Gmail with maximum search granularity.
         """
         try:
 
             def parse_date(date_str: str) -> str:
-                day, month, year = map(int, date_str.split("/"))
-                return datetime(year, month, day).strftime("%Y/%m/%d")
+                d, m, y = map(int, date_str.split("/"))
+                return datetime(y, m, d).strftime("%Y/%m/%d")
 
-            # === Construct Gmail search query ===
-            search_query = ""
+            search_parts = []
 
+            # === Date range ===
             if from_date:
-                search_query += f" after:{parse_date(from_date)}"
+                search_parts.append(f"after:{parse_date(from_date)}")
             if to_date:
                 to_dt = datetime.strptime(parse_date(to_date), "%Y/%m/%d") + timedelta(
                     days=1
                 )
-                search_query += f" before:{to_dt.strftime('%Y/%m/%d')}"
+                search_parts.append(f"before:{to_dt.strftime('%Y/%m/%d')}")
 
+            # === Metadata ===
             if subject:
-                search_query += f' subject:"{subject}"'
+                search_parts.append(f'subject:"{subject}"')
             if sender:
-                search_query += f" from:{sender}"
+                search_parts.append(f"from:{sender}")
             if recipient:
-                search_query += f" to:{recipient}"
+                search_parts.append(f"to:{recipient}")
             if query:
-                search_query += f" {query}"
+                search_parts.append(query)
+
+            # === Flags ===
             if is_read is True:
-                search_query += " is:read"
+                search_parts.append("is:read")
             elif is_read is False:
-                search_query += " is:unread"
-            if is_starred is True:
-                search_query += " is:starred"
-            if is_important is True:
-                search_query += " is:important"
-            if category:
-                search_query += f" category:{category}"
+                search_parts.append("is:unread")
+            if is_starred:
+                search_parts.append("is:starred")
+            if is_important:
+                search_parts.append("is:important")
             if has_attachment:
-                search_query += " has:attachment"
+                search_parts.append("has:attachment")
             if filename:
-                search_query += f" filename:{filename}"
+                search_parts.append(f"filename:{filename}")
             if larger_than:
-                search_query += f" larger:{larger_than.upper()}"
+                search_parts.append(f"larger:{larger_than.upper()}")
 
-            # Include spam/trash if needed
-            if include_spam or include_trash:
-                search_query += " in:anywhere"
+            # === Categories & Labels ===
+            if categories:
+                for cat in categories:
+                    search_parts.append(f"category:{cat}")
+            if labels:
+                for label in labels:
+                    search_parts.append(f"label:{label}")
+
+            # === Location filters ===
+            if locations:
+                loc_query = " OR ".join(locations)
+                search_parts.append(f"({loc_query})")
             else:
-                search_query += " -in:spam -in:trash"
+                # default: exclude spam/trash
+                search_parts.append("-in:spam -in:trash")
 
-            # === Build request ===
+            # === Extra filters ===
+            if extra_filters:
+                search_parts.extend(extra_filters)
+
+            # Build query
+            search_query = " ".join(search_parts).strip()
+
+            # === Gmail API call ===
             kwargs = {
                 "userId": "me",
-                "q": search_query.strip(),
+                "q": search_query,
                 "maxResults": max_results,
             }
-
-            if label_ids:
-                kwargs["labelIds"] = label_ids
             if page_token:
                 kwargs["pageToken"] = page_token
 
-            # === Execute search ===
             results = self.service.users().messages().list(**kwargs).execute()
             messages = results.get("messages", [])
-            emails = []
-
-            for message in messages:
-                email = self.get_email_content_based_on_gmail_id(message["id"])
-                if email:
-                    emails.append(email)
-
-            return emails
+            return [
+                self.get_email_content_based_on_gmail_id(m["id"]) for m in messages if m
+            ]
 
         except Exception as e:
             self.logger.error(f"Error fetching emails: {str(e)}", exc_info=True)
