@@ -2,7 +2,6 @@ from typing import Dict, Generator, Tuple
 from fastapi import APIRouter, HTTPException, WebSocket
 from typing import List
 from app.core.config import settings
-from app.db.repos.gmail.save_refreshed_tokens import save_refreshed_tokens
 from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from app.schemas.gmail_account import GmailAccount
 from app.services.gmail.gmail_toolkit import GmailToolKit
@@ -43,8 +42,6 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
         if data and len(data) > 0:
             gmail_toolkit = GmailToolKit(
                 gmail_account=data[0],
-                token_refresh_callback=save_refreshed_tokens,
-                username=username,
             )
 
         # store session with whatever data is available

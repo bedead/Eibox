@@ -1,14 +1,14 @@
-import json
 import os
 import time
 import base64
 import threading
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Callable
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from app.core.logging import logger
+from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
 from app.schemas.gmail_account import GmailAccount
 from app.utils.common import get_gcp_client_id, get_gcp_client_secret
 from app.core.config import settings
@@ -19,12 +19,8 @@ class GmailToolKit:
         self,
         gmail_account: GmailAccount,
         run_as_thread: bool = False,
-        save_json: bool = False,
-        json_file: Optional[str] = None,
         interval: int = 5,
         max_results: int = 1,
-        username: str = None,
-        token_refresh_callback: Optional[Callable[[GmailAccount, str], None]] = None,
     ):
         """
         Initializes the GmailToolKit with the provided parameters and sets up the Gmail API service.
@@ -32,127 +28,23 @@ class GmailToolKit:
         Parameters:
             gmail_account: GmailAccount - The Gmail account data containing access token
             run_as_thread: bool = False - If True, runs the email monitoring in a separate thread.
-            save_json: bool = True - If True, saves the fetched emails to a JSON file.
-            json_file: Optional[str] = None - Path to the JSON file where emails will be saved.
             interval: int = 5 - Time interval in seconds for checking new emails.
             max_results: int = 1 - Maximum number of emails to fetch in each check.
-            token_refresh_callback: Optional[Callable] - Callback function to save refreshed tokens
         """
         self.gmail_account = gmail_account
         self.run_as_thread = run_as_thread
-        self.save_json = save_json
-        self.recent_emails: List = []
         self.max_results = max_results
-        self.json_file = (
-            json_file or f"emails_{gmail_account.email.replace('@', '_at_')}.json"
-        )
         self.interval = interval
+        self.logger = logger
+        self.recent_emails: List = []
         self.service = None
         self.monitoring_active: bool = False
         self.monitor_thread = None
         self.paused: bool = False
         self.last_check_time = None
-        self.logger = logger
-        self.token_refresh_callback = token_refresh_callback
-        self.token_expires_at = None
-        self._calculate_token_expiry()
+        self.creds = None
         self.authenticate()
-        self.username = username
         self.logger.debug(f"GmailToolKit initialized for {self.gmail_account.email}.")
-
-    def _calculate_token_expiry(self):
-        """Calculate when the current token expires."""
-        if self.gmail_account.expires_in:
-            self.token_expires_at = datetime.now() + timedelta(
-                seconds=self.gmail_account.expires_in
-            )
-        else:
-            # Default to 1 hour if expires_in is not provided
-            self.token_expires_at = datetime.now() + timedelta(hours=1)
-
-    def _is_token_expired(self) -> bool:
-        """Check if the current token is expired or will expire soon (within 5 minutes)."""
-        if not self.token_expires_at:
-            return True
-        return datetime.now() >= (self.token_expires_at - timedelta(minutes=5))
-
-    def _refresh_access_token(self) -> bool:
-        """
-        Refresh the access token using the refresh token.
-        Returns True if successful, False otherwise.
-        """
-        if not self.gmail_account.refresh_token:
-            self.logger.error("No refresh token available for token refresh")
-            return False
-
-        if not self.gmail_account.client_id or not self.gmail_account.client_secret:
-            self.logger.error(
-                "Client ID and Client Secret are required for token refresh"
-            )
-            return False
-
-        try:
-            # Google OAuth2 token refresh endpoint
-            token_url = "https://oauth2.googleapis.com/token"
-
-            data = {
-                "client_id": get_gcp_client_id(),
-                "client_secret": get_gcp_client_secret(),
-                "refresh_token": self.gmail_account.refresh_token,
-                "grant_type": "refresh_token",
-            }
-
-            response = requests.post(token_url, data=data)
-            response.raise_for_status()
-
-            token_data = response.json()
-
-            # Update the account with new tokens
-            self.gmail_account.access_token = token_data["access_token"]
-            self.gmail_account.expires_in = token_data.get("expires_in", 3600)
-            self.gmail_account.token_last_refresh_time = str(datetime.now())
-
-            # Update refresh token if a new one is provided
-            if "refresh_token" in token_data:
-                self.gmail_account.refresh_token = token_data["refresh_token"]
-
-            # Recalculate expiry time
-            self._calculate_token_expiry()
-
-            # Call callback to save updated tokens
-            if self.token_refresh_callback:
-                self.token_refresh_callback(self.gmail_account, username=self.username)
-
-            self.logger.debug(
-                f"Token refreshed successfully for {self.gmail_account.email}"
-            )
-            return True
-
-        except requests.exceptions.RequestException as e:
-            self.logger.error(f"HTTP error during token refresh: {str(e)}")
-            return False
-        except KeyError as e:
-            self.logger.error(f"Missing key in token refresh response: {str(e)}")
-            return False
-        except Exception as e:
-            self.logger.error(
-                f"Unexpected error during token refresh: {str(e)}", exc_info=True
-            )
-            return False
-
-    def _ensure_valid_token(self):
-        """Ensure we have a valid access token, refreshing if necessary."""
-        if self._is_token_expired():
-            self.logger.debug(
-                "Token is expired or will expire soon, attempting refresh..."
-            )
-            if not self._refresh_access_token():
-                raise RuntimeError(
-                    "Failed to refresh access token and current token is expired"
-                )
-
-            # Re-authenticate with the new token
-            self.authenticate()
 
     def authenticate(self):
         """
@@ -169,25 +61,47 @@ class GmailToolKit:
                 scopes=self.gmail_account.scope or settings.GOOGLE_GMAIL_SCOPE,
             )
 
-            print(f"self.token_expires_at: {self.token_expires_at}")
-
             # Build the service
-            self.service = build("gmail", "v1", credentials=creds)
-            self.logger.debug(
-                f"Authenticated successfully with Gmail API for {self.gmail_account.email}."
-            )
+            self.service = build(serviceName="gmail", version="v1", credentials=creds)
 
             # Verify the service works by making a test call
             profile = self.service.users().getProfile(userId="me").execute()
             self.logger.debug(
                 f"Gmail API connection verified. Email: {profile.get('emailAddress')}"
             )
+            self.creds = creds
+            self._maybe_persist_tokens()
 
         except Exception as e:
             self.logger.error(
                 f"Error authenticating with Gmail API: {str(e)}", exc_info=True
             )
             raise RuntimeError(f"Failed to authenticate with Gmail API: {str(e)}")
+
+    def _maybe_persist_tokens(self):
+        """Update refresh tokens if refresh successful."""
+        if self.creds:
+            self.gmail_account.access_token = self.creds.token
+            self.gmail_account.refresh_token = self.creds.refresh_token
+            expiry = self.creds.expiry
+            if expiry is None:
+                self.gmail_account.expires_in = 3600
+            else:
+                if expiry.tzinfo is None:
+                    expiry = expiry.replace(tzinfo=timezone.utc)
+                self.gmail_account.expires_in = max(
+                    0,
+                    int(
+                        (
+                            expiry.astimezone(timezone.utc) - datetime.now(timezone.utc)
+                        ).total_seconds()
+                    ),
+                )
+
+            self.gmail_account.token_last_refresh_time = str(datetime.now())
+            add_gmail_account(
+                new_account=self.gmail_account, namespace_for_memory=("auth", "user")
+            )
 
     def mark_email_as_read(self, message_id):
         """Marks an email as read by removing the UNREAD label."""
@@ -200,40 +114,9 @@ class GmailToolKit:
         except Exception as e:
             self.logger.debug(f"Error marking email {message_id} as read: {str(e)}")
 
-    def load_existing_emails(self):
-        """Load existing emails from JSON file to avoid duplicates."""
-        if os.path.exists(self.json_file):
-            try:
-                with open(self.json_file, "r") as file:
-                    return json.load(file)
-            except json.JSONDecodeError:
-                self.logger.debug(
-                    "JSON Decoder Error occurred while loading existing emails from JSON."
-                )
-                return []
-        return []
-
-    def save_emails_to_json(self, emails):
-        """Append new emails to JSON file without overwriting old emails."""
-        existing_emails = self.load_existing_emails()
-        existing_ids = {email["id"] for email in existing_emails}
-
-        new_emails = [email for email in emails if email["id"] not in existing_ids]
-
-        if new_emails:
-            existing_emails.extend(new_emails)
-            with open(self.json_file, "w") as file:
-                json.dump(existing_emails, file, indent=4)
-            self.logger.debug(
-                f"Saved {len(new_emails)} new email(s) to {self.json_file}"
-            )
-
     def get_email_content_based_on_gmail_id(self, message_id):
         """Retrieve email content given the email ID."""
         try:
-            # Ensure we have a valid token before making API calls
-            self._ensure_valid_token()
-
             message = (
                 self.service.users()
                 .messages()
@@ -281,7 +164,7 @@ class GmailToolKit:
 
     def check_emails(
         self,
-        from_date: Optional[str] = None,  # Format: "d/m/yyyy"
+        from_date: Optional[str] = None,
         to_date: Optional[str] = None,
         query: Optional[str] = None,
         subject: Optional[str] = None,
@@ -292,90 +175,97 @@ class GmailToolKit:
         is_important: Optional[bool] = None,
         has_attachment: Optional[bool] = None,
         filename: Optional[str] = None,
-        larger_than: Optional[str] = None,  # e.g., "5M", "100K"
-        category: Optional[str] = None,  # e.g., "promotions", "primary"
-        label_ids: Optional[List[str]] = None,  # e.g., ["INBOX", "UNREAD"]
-        include_spam: bool = False,
-        include_trash: bool = False,
+        larger_than: Optional[str] = None,
+        categories: Optional[List[str]] = None,  # ["promotions", "primary"]
+        labels: Optional[List[str]] = None,  # ["INBOX", "UNREAD", "CATEGORY_UPDATES"]
+        locations: Optional[List[str]] = None,  # ["in:spam", "in:trash", "in:inbox"]
+        extra_filters: Optional[List[str]] = None,  # ["has:drive", "is:snoozed"]
         max_results: int = 10,
         page_token: Optional[str] = None,
     ) -> List[dict]:
         """
-        Fetches emails from the user's Gmail inbox using advanced search filters.
+        Fetch emails from Gmail with maximum search granularity.
         """
         try:
-            # Ensure we have a valid token before making API calls
-            self._ensure_valid_token()
 
             def parse_date(date_str: str) -> str:
-                day, month, year = map(int, date_str.split("/"))
-                return datetime(year, month, day).strftime("%Y/%m/%d")
+                d, m, y = map(int, date_str.split("/"))
+                return datetime(y, m, d).strftime("%Y/%m/%d")
 
-            # === Construct Gmail search query ===
-            search_query = ""
+            search_parts = []
 
+            # === Date range ===
             if from_date:
-                search_query += f" after:{parse_date(from_date)}"
+                search_parts.append(f"after:{parse_date(from_date)}")
             if to_date:
                 to_dt = datetime.strptime(parse_date(to_date), "%Y/%m/%d") + timedelta(
                     days=1
                 )
-                search_query += f" before:{to_dt.strftime('%Y/%m/%d')}"
+                search_parts.append(f"before:{to_dt.strftime('%Y/%m/%d')}")
 
+            # === Metadata ===
             if subject:
-                search_query += f' subject:"{subject}"'
+                search_parts.append(f'subject:"{subject}"')
             if sender:
-                search_query += f" from:{sender}"
+                search_parts.append(f"from:{sender}")
             if recipient:
-                search_query += f" to:{recipient}"
+                search_parts.append(f"to:{recipient}")
             if query:
-                search_query += f" {query}"
+                search_parts.append(query)
+
+            # === Flags ===
             if is_read is True:
-                search_query += " is:read"
+                search_parts.append("is:read")
             elif is_read is False:
-                search_query += " is:unread"
-            if is_starred is True:
-                search_query += " is:starred"
-            if is_important is True:
-                search_query += " is:important"
-            if category:
-                search_query += f" category:{category}"
+                search_parts.append("is:unread")
+            if is_starred:
+                search_parts.append("is:starred")
+            if is_important:
+                search_parts.append("is:important")
             if has_attachment:
-                search_query += " has:attachment"
+                search_parts.append("has:attachment")
             if filename:
-                search_query += f" filename:{filename}"
+                search_parts.append(f"filename:{filename}")
             if larger_than:
-                search_query += f" larger:{larger_than.upper()}"
+                search_parts.append(f"larger:{larger_than.upper()}")
 
-            # Include spam/trash if needed
-            if include_spam or include_trash:
-                search_query += " in:anywhere"
+            # === Categories & Labels ===
+            if categories:
+                for cat in categories:
+                    search_parts.append(f"category:{cat}")
+            if labels:
+                for label in labels:
+                    search_parts.append(f"label:{label}")
+
+            # === Location filters ===
+            if locations:
+                loc_query = " OR ".join(locations)
+                search_parts.append(f"({loc_query})")
             else:
-                search_query += " -in:spam -in:trash"
+                # default: exclude spam/trash
+                search_parts.append("-in:spam -in:trash")
 
-            # === Build request ===
+            # === Extra filters ===
+            if extra_filters:
+                search_parts.extend(extra_filters)
+
+            # Build query
+            search_query = " ".join(search_parts).strip()
+
+            # === Gmail API call ===
             kwargs = {
                 "userId": "me",
-                "q": search_query.strip(),
+                "q": search_query,
                 "maxResults": max_results,
             }
-
-            if label_ids:
-                kwargs["labelIds"] = label_ids
             if page_token:
                 kwargs["pageToken"] = page_token
 
-            # === Execute search ===
             results = self.service.users().messages().list(**kwargs).execute()
             messages = results.get("messages", [])
-            emails = []
-
-            for message in messages:
-                email = self.get_email_content_based_on_gmail_id(message["id"])
-                if email:
-                    emails.append(email)
-
-            return emails
+            return [
+                self.get_email_content_based_on_gmail_id(m["id"]) for m in messages if m
+            ]
 
         except Exception as e:
             self.logger.error(f"Error fetching emails: {str(e)}", exc_info=True)
@@ -474,9 +364,6 @@ class GmailToolKit:
         """
         status = {}
         try:
-            # Ensure we have a valid token before making API calls
-            self._ensure_valid_token()
-
             message = {
                 "raw": base64.urlsafe_b64encode(
                     f"From: me\nTo: {to}\nSubject: {subject}\n\n{body}".encode("utf-8")
@@ -501,9 +388,6 @@ class GmailToolKit:
             message_id (str): The unique identifier of the email message to be deleted.
         """
         try:
-            # Ensure we have a valid token before making API calls
-            self._ensure_valid_token()
-
             self.service.users().messages().delete(userId="me", id=message_id).execute()
             self.logger.debug(f"Email with ID {message_id} deleted successfully.")
         except Exception as e:

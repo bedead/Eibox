@@ -1,7 +1,6 @@
 from typing import Dict, List, Tuple
 from fastapi import APIRouter, HTTPException, WebSocket
 from pydantic import BaseModel
-from app.db.repos.gmail.save_refreshed_tokens import save_refreshed_tokens
 from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from dotenv import load_dotenv
 
@@ -55,8 +54,6 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
         if data and len(data) > 0:
             gmail_toolkit = GmailToolKit(
                 gmail_account=data[0],
-                token_refresh_callback=save_refreshed_tokens,
-                username=username,
             )
 
         # store session

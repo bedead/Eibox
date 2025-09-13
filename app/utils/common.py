@@ -3,7 +3,7 @@ import re
 from dotenv import load_dotenv
 import os
 from app.core.logging import logger
-
+from app.core.config import settings
 
 load_dotenv()
 
@@ -16,8 +16,26 @@ def get_gcp_client_secret() -> str:
     return os.environ.get("GMAIL_WEB_CLIENT_SECRET")
 
 
+def get_dev_server_url() -> str:
+    return os.environ.get("DEV_SERVER_URL")
+
+
+def get_prod_server_url() -> str:
+    return os.environ.get("PROD_SERVER_URL")
+
+
 def get_gmail_redirect_uri() -> str:
-    return os.environ.get("GMAIL_WEB_REDIRECT_URI")
+    # Get server type config url
+    if settings.API_DEV_SERVER:
+        SERVER_URL = get_dev_server_url()
+    else:
+        SERVER_URL = get_prod_server_url()
+
+    # Get the default GMAIL_WEB_REDIRECT_URI Endpoint for redirect
+    GMAIL_WEB_REDIRECT_URI = os.environ.get("GMAIL_WEB_REDIRECT_URI")
+
+    # Return the combined URL Endpoint
+    return f"{SERVER_URL}{GMAIL_WEB_REDIRECT_URI}"
 
 
 def get_google_gemini_key() -> str | None:
