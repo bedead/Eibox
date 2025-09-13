@@ -24,7 +24,7 @@ class RegisterRequest(BaseModel):
     full_name: str | None
     email: str
     password: str
-    user_type: str
+    # user_type: Optional[str | None]
     gmail_accounts: Optional[List[str] | None]
 
 
@@ -43,10 +43,10 @@ def register_user(user: RegisterRequest):
         "password": user.password,  # Assume hashing handled in `ru()`
         "full_name": user.full_name.strip() if user.full_name else None,
         "account_details_updated": None,
-        "user_type": user.user_type or "free_user",
+        "user_type": "free_user",
         "app_settings": {
             "auto_email_monitoring": False,
-            "email_monitoring_frequency": 30,
+            "email_monitoring_frequency": 60,
             "email_notifications": False,
             "connected_gmail_accounts_email": user.gmail_accounts or [],
         },
