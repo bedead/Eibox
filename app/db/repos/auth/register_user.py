@@ -1,12 +1,20 @@
-from datetime import datetime
+"""
+This module provides functionality to register a new user in the authentication system.
+It checks for existing users, hashes passwords, and stores user data in the database.
+"""
+
+from typing import Any, Dict, Tuple
+
 from fastapi import HTTPException
-from typing import Any, Dict
-from app.utils._api_helper import _hash_password
+
+from app.utils._api_helper import hash_password
 from app.schemas.user_model import UserModel
 from app.db.redis import db_store
 
 
-def register_user(user: UserModel, namespace_for_memory: tuple) -> Dict[str, Any]:
+def register_user(
+    user: UserModel, namespace_for_memory: Tuple[str, str]
+) -> Dict[str, Any]:
     """
     Register a new user with the provided user schema.
     """
@@ -18,12 +26,12 @@ def register_user(user: UserModel, namespace_for_memory: tuple) -> Dict[str, Any
         )
     # User does not exist, proceed to register
     try:
-        user.password = _hash_password(user.password)  # Store hashed password
+        user.password = hash_password(user.password)  # Store hashed password
         # Store user data in the database
         db_store.put(
             namespace=namespace_for_memory,
             key=user_key,
-            value=user.model_dump_json(),
+            value=user.model_dump(),
             index=False,
         )
         return {

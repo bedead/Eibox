@@ -1,8 +1,24 @@
-from typing import Dict, Generator, Tuple
+"""
+WebSocket and API endpoints for managing user sessions and email interactions.
+This module provides FastAPI routes for opening and closing WebSocket connections
+associated with user sessions and Gmail accounts. It handles session creation,
+email scheduler job initiation, message streaming, and session cleanup.
+Endpoints:
+    - /open/{username}/{thread_id} (WebSocket): Opens a WebSocket connection for a user and thread,
+      initializes session and email scheduler job, and streams AI responses.
+    - /close/{username}/{thread_id} (POST): Closes the WebSocket connection and cleans up the session.
+Author: Satyam Mishra
+Date: 14-09-2025
+"""
+
+from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException, WebSocket
-from typing import List
+
 from app.core.config import settings
+from app.core.logging import logger
 from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
+from app.schemas.chat_session import ChatSession
 from app.schemas.gmail_account import GmailAccount
 from app.services.gmail.gmail_toolkit import GmailToolKit
 from app.services.job_scheduler.jobs import start_email_scheduler_job
@@ -10,7 +26,6 @@ from app.services.session.delete_session import delete_session
 from app.services.session.get_session import get_session
 from app.services.session.store_session import store_session
 from app.utils._api_helper import call_graph
-from app.core.logging import logger
 
 router = APIRouter()
 
@@ -38,7 +53,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
             username=username, namespace_for_memory=namespace_for_memory
         )
         # print(f"Gmail_accounts : {data}")
-        gmail_toolkit: GmailToolKit = None
+        gmail_toolkit: Optional[GmailToolKit] = None
         if data and len(data) > 0:
             gmail_toolkit = GmailToolKit(
                 gmail_account=data[0],
@@ -66,7 +81,8 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
                     thread_id=thread_id,
                     streaming=streaming,
                 ):
-                    await websocket.send_text(chunk)
+                    if isinstance(chunk, str):
+                        await websocket.send_text(chunk)
             else:
                 ai_output = call_graph(
                     user_input=message,
@@ -74,8 +90,9 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
                     thread_id=thread_id,
                     streaming=streaming,
                 )
-                logger.debug(f"AI Output: {ai_output}")
-                await websocket.send_text(ai_output)
+                if isinstance(ai_output, str):
+                    logger.debug(f"AI Output: {ai_output}")
+                    await websocket.send_text(ai_output)
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}", exc_info=True)
         try:
@@ -90,26 +107,27 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
 
 @router.post("/close/{username}/{thread_id}")
 async def close_websocket(username: str, thread_id: str):
-    session = get_session(username, thread_id)
-    websocket = session.websocket
+    session: ChatSession = get_session(username, thread_id)
+    websocket: Optional[WebSocket | None] = session.websocket
 
     try:
         delete_session(username, thread_id)
-        # Already closed?
-        if websocket.client_state.name == "DISCONNECTED":
-            # cleanup stale session
-            return {
-                "status": "websocket already closed",
-                "username": username,
-                "thread_id": thread_id,
-            }
-        else:
-            await websocket.close(code=1000)  # Normal closure
-            return {
-                "status": "websocket closed and cleared session",
-                "username": username,
-                "thread_id": thread_id,
-            }
+        if websocket != None:
+            # Already closed?
+            if websocket.client_state.name == "DISCONNECTED":
+                # cleanup stale session
+                return {
+                    "status": "websocket already closed",
+                    "username": username,
+                    "thread_id": thread_id,
+                }
+            else:
+                await websocket.close(code=1000)  # Normal closure
+                return {
+                    "status": "websocket closed and cleared session",
+                    "username": username,
+                    "thread_id": thread_id,
+                }
 
     except Exception as e:
         logger.error(f"500: Failed to close websocket: {str(e)}")

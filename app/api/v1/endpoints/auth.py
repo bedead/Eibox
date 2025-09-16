@@ -1,16 +1,24 @@
+"""
+Authentication endpoints for the API.
+Handles login, register, and update user data.
+Author: Satyam Mishra
+Date: 14-09-2025
+"""
+
 import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+
+from dotenv import load_dotenv
 from fastapi import APIRouter
 from pydantic import BaseModel
+
+load_dotenv()
+
 from app.schemas.user_model import UserModel
 from app.schemas.login import LoginSchema
 from app.db.repos.auth.register_user import register_user as ru
 from app.db.repos.auth.login_user import login_user as lu
 from app.db.repos.auth.update_user_data import update_user_data as uud
-from dotenv import load_dotenv
-
-
-load_dotenv()
 
 
 router = APIRouter()
@@ -35,7 +43,7 @@ def register_user(user: RegisterRequest):
     # Normalize and clean data
     now = datetime.datetime.now()
 
-    formatted_data = {
+    formatted_data: Dict[str, Any] = {
         "user_id": user.user_id.strip(),
         "account_created": user.account_created or str(now),
         "username": user.username.strip(),
@@ -60,7 +68,7 @@ def register_user(user: RegisterRequest):
 
 
 @router.post("/login")
-def login_user(user: LoginSchema):
+def login_user(user: LoginSchema) -> Dict[str, Any]:
     return lu(user, namespace_for_memory)
 
 
@@ -77,7 +85,7 @@ class UpdateUserDataRequest(BaseModel):
 @router.post("/update_user_data")
 def update_user_data(payload: UpdateUserDataRequest):
     # Build app_settings dict only with non-None values
-    app_settings = {}
+    app_settings: Dict[str, Any] = {}
     print(f"Payload received: {payload}")
 
     if payload.auto_email_monitoring is not None:

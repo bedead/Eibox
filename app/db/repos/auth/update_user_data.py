@@ -1,6 +1,16 @@
+"""
+This module provides functionality to safely update user details in the database,
+including flexible updates to user application settings. It handles retrieval,
+merging, validation, and storage of user data, ensuring data integrity and error handling.
+Functions:
+    - update_user_data: Updates user information and app settings in the database.
+"""
+
 from datetime import datetime
+from typing import Any, Dict, Optional, Tuple
+
 from fastapi import HTTPException
-from typing import Any, Dict, Optional
+
 from app.schemas.user_model import UserModel
 from app.core.logging import logger
 from app.db.redis import db_store
@@ -9,7 +19,7 @@ from app.utils.common import deep_merge_dicts, safe_json_parse
 
 def update_user_data(
     username: str,
-    namespace_for_memory: tuple,
+    namespace_for_memory: Tuple[str, str],
     full_name: Optional[str] = None,
     app_settings: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
@@ -27,7 +37,10 @@ def update_user_data(
 
         logger.debug(f"User details found for username: {username}")
 
-        existing_data = safe_json_parse(raw_data, default={})
+        existing_data = safe_json_parse(raw_data)
+        if not isinstance(existing_data, dict):
+            logger.critical("Parsed user data is not a dictionary")
+            raise HTTPException(status_code=500, detail="Invalid user data format")
 
         # Merge updates without overwriting unspecified fields
         updated_data = {**existing_data}
@@ -51,7 +64,7 @@ def update_user_data(
         db_store.put(
             namespace=namespace_for_memory,
             key=user_key,
-            value=user_data.model_dump_json(),
+            value=user_data.model_dump(),
             index=False,
         )
 

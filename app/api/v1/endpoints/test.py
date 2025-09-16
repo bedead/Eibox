@@ -1,18 +1,30 @@
-from typing import Dict, List, Tuple
+"""
+API endpoints for testing and managing Google account sessions and chatbot websocket connections.
+This module provides the following endpoints:
+- POST /get_google_account/: Retrieve Google account information for a given username.
+- WebSocket /chatbot/{username}/{thread_id}: Open a websocket connection for chatbot interaction, managing user sessions.
+- POST /chatbot/close/{username}/{thread_id}: Close an active chatbot websocket session and clean up resources.
+- GET /health: Health check endpoint to verify the service status.
+Author: Satyam Mishra
+Date: 14-09-2025
+"""
+
+from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException, WebSocket
 from pydantic import BaseModel
-from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from dotenv import load_dotenv
 
-from app.schemas.gmail_account import GmailAccount
-from app.services.gmail.gmail_toolkit import GmailToolKit
-from app.services.job_scheduler.jobs import start_email_scheduler_job
+load_dotenv()
+
 from app.core.logging import logger
+from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
+from app.schemas.gmail_account import GmailAccount
+from app.schemas.chat_session import ChatSession
+from app.services.gmail.gmail_toolkit import GmailToolKit
 from app.services.session.get_session import get_session
 from app.services.session.delete_session import delete_session
 from app.services.session.store_session import store_session
-
-load_dotenv()
 
 
 router = APIRouter()
@@ -50,7 +62,7 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
             username=username, namespace_for_memory=namespace_for_memory
         )
         # print(f"Gmail_accounts : {data}")
-        gmail_toolkit: GmailToolKit = None
+        gmail_toolkit: Optional[GmailToolKit] = None
         if data and len(data) > 0:
             gmail_toolkit = GmailToolKit(
                 gmail_account=data[0],
@@ -79,26 +91,30 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
 
 @router.post("/chatbot/close/{username}/{thread_id}")
 async def close_chat_websocket(username: str, thread_id: str):
-    session = get_session(username, thread_id)
-    websocket = session.websocket
+    session: ChatSession = get_session(username, thread_id)
+    websocket: Optional[WebSocket | None] = session.websocket
 
     try:
         delete_session(username, thread_id)
-        # Already closed?
-        if websocket.client_state.name == "DISCONNECTED":
-            # cleanup stale session
-            return {
-                "status": "websocket already closed",
-                "username": username,
-                "thread_id": thread_id,
-            }
-        else:
-            await websocket.close(code=1000)  # Normal closure
-            return {
-                "status": "websocket closed and cleared session",
-                "username": username,
-                "thread_id": thread_id,
-            }
+        # Making sure that websocket object is not None and session has returned websocket object
+        if websocket != None:
+            # Already closed?
+            if websocket.client_state.name == "DISCONNECTED":
+                # cleanup stale session
+                return {
+                    "status": "websocket already closed",
+                    "username": username,
+                    "thread_id": thread_id,
+                }
+            else:
+                await websocket.close(
+                    code=1000, reason="user disconnected"
+                )  # Normal closure
+                return {
+                    "status": "websocket closed and cleared session",
+                    "username": username,
+                    "thread_id": thread_id,
+                }
 
     except Exception as e:
         logger.error(f"500: Failed to close websocket: {str(e)}")

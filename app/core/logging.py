@@ -1,23 +1,23 @@
 from datetime import datetime
 import logging
 import os
-from typing import Optional
 from dotenv import load_dotenv
 from app.core.config import settings
 
 load_dotenv()
 
 
-def _get_log_filename(log_folder_name: str) -> str:
+def _get_log_filename(log_folder_name: str) -> str:  # type: ignore
     """Generate a valid log filename using current timestamp"""
     os.makedirs(log_folder_name, exist_ok=True)  # ensure folder exists
     timestamp = datetime.now().strftime("DATE-%Y-%m-%d_TIME-%H-%M-%S")
     return os.path.join(log_folder_name, f"{timestamp}.log")
 
 
-def setup_logging(
-    log_type: Optional[str] = None, log_folder_name: Optional[str] = None
-) -> logging.Logger:
+def setup_logging() -> logging.Logger:
+    log_folder_name: str = settings.LOG_FOLDER_NAME
+    log_type: str = settings.LOG_TYPE
+
     root_logger = logging.getLogger("Eibox")
 
     # Clear duplicate handlers if any (important when re-running in dev)
@@ -32,9 +32,16 @@ def setup_logging(
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # File handler (always DEBUG)
+    # Get Logging File Name based on Dev or Prod Server
     os.makedirs(log_folder_name, exist_ok=True)
-    file_path = os.path.join(log_folder_name, f"DATE-2025-08-23_TIME-21-29-30.log")
+    if log_type == "debug":
+        file_path = os.path.join(log_folder_name, "debug.log")
+    elif log_type == "info":
+        file_path = _get_log_filename(log_folder_name)
+    else:
+        file_path = os.path.join(log_folder_name, "default.log")
+
+    # File handler (always DEBUG)
     fh = logging.FileHandler(file_path, encoding="utf-8")
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(formatter)
@@ -51,7 +58,5 @@ def setup_logging(
     return root_logger
 
 
-logger = setup_logging(
-    log_type=settings.LOG_TYPE, log_folder_name=settings.LOG_FOLDER_NAME
-)
+logger = setup_logging()
 logger.debug(f"Logging initialized with level={settings.LOG_TYPE}")

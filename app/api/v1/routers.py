@@ -1,3 +1,7 @@
+"""
+Packages all the available routers in one place.
+"""
+
 from .endpoints.websocket import router as websocket_router
 from .endpoints.cron_api import router as cron_router
 from .endpoints.auth import router as auth_router

@@ -1,23 +1,30 @@
-# Session object: stores socket + extra context
-from typing import Any, Dict
+"""
+Chat session model definition.
+
+This module defines the `ChatSession` class, which represents a user’s active
+chat session. It stores metadata such as username, thread ID, WebSocket
+connection, Gmail toolkit instance, scheduled job, and any extra session data.
+
+The model uses Pydantic for validation and supports arbitrary types
+(e.g., FastAPI WebSocket, APScheduler Job, and custom GmailToolKit).
+"""
+
+from typing import Any, Dict, Optional
+
+from apscheduler.job import Job
 from fastapi import WebSocket
+from pydantic import BaseModel
 
 from app.services.gmail.gmail_toolkit import GmailToolKit
 
 
-class ChatSession:
-    def __init__(
-        self,
-        websocket: WebSocket,
-        username: str,
-        thread_id: str,
-        toolkit: GmailToolKit = None,
-        session_job=None,
-        extra_data: Dict[str, Any] = None,
-    ):
-        self.websocket: WebSocket = websocket
-        self.username: str = username
-        self.thread_id: str = thread_id
-        self.gmail_toolkit: GmailToolKit = toolkit
-        self.session_job = session_job
-        self.extra_data: Dict[str, Any] = extra_data
+class ChatSession(BaseModel):
+    username: str
+    thread_id: str
+    websocket: Optional["WebSocket"] = None
+    toolkit: Optional[GmailToolKit] = None
+    session_job: Optional[Job] = None
+    extra_data: Optional[Dict[str, Any]] = None
+
+    class Config:
+        arbitrary_types_allowed = True  # allows Job, WebSocket, GmailToolKit

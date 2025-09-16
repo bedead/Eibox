@@ -1,15 +1,25 @@
-import json
-from typing import Dict
+"""
+This module provides functionality for authenticating and logging in users.
+Functions:
+    login_user(user: LoginSchema, namespace_for_memory: Tuple[str, str]) -> Dict[str, Any]:
+        Authenticates a user based on the provided login schema and retrieves user data from Redis.
+        Handles password verification and returns appropriate HTTP exceptions for invalid credentials or errors.
+"""
+
+from typing import Any, Dict, List, Tuple, cast
+
 from fastapi import HTTPException
-from app.utils._api_helper import _hash_password
+
+from app.core.logging import logger
+from app.utils._api_helper import hash_password
 from app.schemas.login import LoginSchema
 from app.db.redis import db_store
-from app.core.logging import logger
 from app.utils.common import safe_json_parse
 
 
-# TODO: #12 update user_key by adding user_id also, by taking optional user_id as input field.
-def login_user(user: LoginSchema, namespace_for_memory: tuple) -> Dict[str, any]:
+def login_user(
+    user: LoginSchema, namespace_for_memory: Tuple[str, str]
+) -> Dict[str, Any]:
     """
     Log in a user with the provided user schema.
     """
@@ -21,14 +31,18 @@ def login_user(user: LoginSchema, namespace_for_memory: tuple) -> Dict[str, any]
 
         # Check if user exists and password matches
         if not data or not data.value:
-            logger.debug(f"404: User not found")
+            logger.debug(f"404: User data not found for username: {user.username}")
             raise HTTPException(status_code=404, detail="User not found")
 
         # Paring the safe josn values from  nested redis object
-        data = safe_json_parse(data.value)
+        parsed_data: Dict[str, Any] | List[Any] | Any = safe_json_parse(data.value)
+        if not isinstance(parsed_data, dict):
+            logger.critical("Parsed user data is not a dictionary")
+            raise HTTPException(status_code=500, detail="Invalid user data format")
 
         # Check if the provided password matches the stored hashed password
-        if data.get("password") != _hash_password(user.password):
+        parsed_data = cast(Dict[str, Any], parsed_data)
+        if parsed_data.get("password") != hash_password(user.password):
             logger.warning(f"401: Invalid password")
             raise HTTPException(
                 status_code=401, detail=f"User {user.username} entered invalid password"
