@@ -1,7 +1,11 @@
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple, Optional
+
+from fastapi import WebSocket
 
 from app.schemas.chat_session import ChatSession
 from app.core.logging import logger
+from app.services.gmail.gmail_toolkit import GmailToolKit
+from apscheduler.job import Job
 
 active_sessions: Dict[Tuple[str, str], ChatSession] = {}
 
@@ -9,18 +13,18 @@ active_sessions: Dict[Tuple[str, str], ChatSession] = {}
 def store_session(
     username: str,
     thread_id: str,
-    websocket=None,
-    gmail_toolkit=None,
-    session_job=None,
-    extra_data=None,
+    gmail_toolkit: Optional[GmailToolKit] = None,
+    websocket: Optional[WebSocket] = None,
+    session_job: Optional[Job] = None,
+    extra_data: Optional[Dict[str, Any]] = None,
 ):
     connection_key = (username, thread_id)
 
     session = ChatSession(
-        websocket=websocket,
         username=username,
         thread_id=thread_id,
         toolkit=gmail_toolkit,
+        websocket=websocket,
         session_job=session_job,
         extra_data=extra_data,
     )

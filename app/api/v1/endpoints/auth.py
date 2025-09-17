@@ -26,6 +26,8 @@ namespace_for_memory = ("auth", "user")
 
 
 class RegisterRequest(BaseModel):
+    """Payload schema for register request from user."""
+
     user_id: str
     account_created: str
     username: str
@@ -74,6 +76,7 @@ def login_user(user: LoginSchema) -> Dict[str, Any]:
 
 # Model class for updating user data
 class UpdateUserDataRequest(BaseModel):
+    """Payload schema to update user data from user."""
     username: str
     full_name: Optional[str] = None
     auto_email_monitoring: Optional[bool] = None

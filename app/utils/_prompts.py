@@ -1,3 +1,7 @@
+"""
+System prompts for all the agents and tasks execution.
+"""
+
 from textwrap import dedent
 
 SEMANTIC_MEMORY_PROMPT = dedent(
