@@ -12,7 +12,7 @@ This module provides:
 import json
 import re
 import os
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Literal, Union
 
 
 from dotenv import load_dotenv
@@ -28,7 +28,7 @@ def get_gcp_client_id() -> str:
     """Returns GOOGLE CLOUD PROVIDERS web client Id."""
 
     var: str | None = os.environ.get("GMAIL_WEB_CLIENT_ID")
-    if var == None:
+    if var is None:
         logger.critical(f"Missing required environment variable: GMAIL_WEB_CLIENT_ID")
         raise RuntimeError("Missing required environment variable: GMAIL_WEB_CLIENT_ID")
     return var
@@ -37,7 +37,7 @@ def get_gcp_client_id() -> str:
 def get_gcp_client_secret() -> str:
     """Returns GOOGLE CLOUD PROVIDERS web client secret."""
     var: str | None = os.environ.get("GMAIL_WEB_CLIENT_SECRET")
-    if var == None:
+    if var is None:
         logger.critical(
             f"Missing required environment variable: GMAIL_WEB_CLIENT_SECRET"
         )
@@ -50,7 +50,7 @@ def get_gcp_client_secret() -> str:
 def get_dev_server_url() -> str:
     """Returns Development Server URL."""
     var: str | None = os.environ.get("DEV_SERVER_URL")
-    if var == None:
+    if var is None:
         logger.critical(f"Missing required environment variable: DEV_SERVER_URL")
         raise RuntimeError("Missing required environment variable: DEV_SERVER_URL")
     return var
@@ -59,7 +59,7 @@ def get_dev_server_url() -> str:
 def get_prod_server_url() -> str:
     """Returns Production Server URL."""
     var: str | None = os.environ.get("PROD_SERVER_URL")
-    if var == None:
+    if var is None:
         logger.critical(f"Missing required environment variable: PROD_SERVER_URL")
         raise RuntimeError("Missing required environment variable: PROD_SERVER_URL")
     return var
@@ -92,7 +92,7 @@ def get_gmail_redirect_uri() -> str:
 def get_google_gemini_key() -> str | None:
     """Returns the Google Gemini API key from environment variables."""
     var: str | None = os.environ.get("GOOGLE_GEMINI_API_KEY")
-    if var == None:
+    if var is None:
         logger.critical(f"Missing required environment variable: GOOGLE_GEMINI_API_KEY")
         raise RuntimeError(
             "Missing required environment variable: GOOGLE_GEMINI_API_KEY"
@@ -104,7 +104,7 @@ def get_google_gemini_key() -> str | None:
 def get_local_redis_store_host() -> str | None:
     """Get the local redis store host endpoint with port."""
     var: str | None = os.environ.get("LOCAL_REDIS_STORE_HOST")
-    if var == None:
+    if var is None:
         logger.critical(
             f"Missing required environment variable: LOCAL_REDIS_STORE_HOST"
         )
@@ -117,7 +117,7 @@ def get_local_redis_store_host() -> str | None:
 def get_cloud_redis_store_host() -> str | None:
     """Get the cloud redis store host endpoint with port."""
     var: str | None = os.environ.get("CLOUD_REDIS_STORE_HOST")
-    if var == None:
+    if var is None:
         logger.critical(
             f"Missing required environment variable: CLOUD_REDIS_STORE_HOST"
         )
@@ -130,7 +130,7 @@ def get_cloud_redis_store_host() -> str | None:
 def get_groq_key():
     """Get the Groq API key from environment variables."""
     var: str | None = os.environ.get("GROQ_API_KEY")
-    if var == None:
+    if var is None:
         logger.critical(f"Missing required environment variable: GROQ_API_KEY")
         raise RuntimeError("Missing required environment variable: GROQ_API_KEY")
     return var
@@ -188,7 +188,7 @@ def deep_merge_dicts(original: dict, updates: dict) -> dict:
 
 
 def safe_json_parse(
-    data: str | Dict[str, Any] | List[Any],
+    data: Union[str, Dict[str, Any], List[Any]], get: Literal["dict", "list"] = "dict"
 ) -> Union[Dict[str, Any], List[Any], Any]:
     """
     Universal JSON parser that safely converts strings to Python objects (dict, list, etc.).
@@ -203,13 +203,24 @@ def safe_json_parse(
         return data
 
     # Try parsing JSON string
-    try:
-        parsed: Any = json.loads(data)
-        # Recursively parse if there are nested JSON strings
-        if isinstance(parsed, dict):
-            return {str(k): safe_json_parse(v) for k, v in parsed.items()}  # type: ignore
-        elif isinstance(parsed, list):
-            return [safe_json_parse(v) for v in parsed]  # type: ignore
-        return parsed
-    except (TypeError, json.JSONDecodeError) as e:
-        raise ValueError("Invalid JSON input") from e
+    if isinstance(data, str):
+        data = data.strip()
+        # Only try parsing if it *looks like* JSON
+        if data.startswith("{") or data.startswith("["):
+            try:
+                parsed = json.loads(data)
+
+                # Ensure type matches `get`
+                if get == "dict" and not isinstance(parsed, dict):
+                    raise ValueError("Expected dict but got something else")
+                if get == "list" and not isinstance(parsed, list):
+                    raise ValueError("Expected list but got something else")
+
+                # Recursively parse if there are nested JSON strings
+                if isinstance(parsed, dict):
+                    return {str(k): safe_json_parse(v, get="dict") for k, v in parsed.items()}  # type: ignore
+                elif isinstance(parsed, list):
+                    return [safe_json_parse(v, get="list") for v in parsed]  # type: ignore
+                return parsed
+            except (TypeError, json.JSONDecodeError) as e:
+                raise ValueError("Invalid JSON input") from e

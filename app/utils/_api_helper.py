@@ -1,5 +1,5 @@
 import hashlib
-from typing import Any, Dict, Generator
+from typing import Any, Dict, Generator, Union
 
 import asyncio
 from apscheduler.job import Job
@@ -52,7 +52,7 @@ async def to_async_gen(sync_gen):
 
 def call_graph(
     user_input: str, username: str, thread_id: str, streaming: bool = False
-) -> str | Generator[str | list[str | Dict[str, Any]]]:
+) -> Union[str, Generator[Union[str, list[str | Dict[str, Any]]], None, None]]:
     state = ChatbotState(
         messages=[{"role": "user", "content": user_input}],
     )
@@ -95,7 +95,7 @@ def call_graph(
         )
 
         # response["chatbot"] is likely a list
-        print(type(response))
+        # print(type(response))
         chatbot_output = response[-1]["chatbot"]
         if chatbot_output:
             messages = chatbot_output.get("messages")[0]

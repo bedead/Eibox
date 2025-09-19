@@ -21,8 +21,8 @@ from app.services.gmail.gmail_toolkit import GmailToolKit
 class ChatSession(BaseModel):
     username: str
     thread_id: str
-    websocket: Optional["WebSocket"] = None
-    toolkit: Optional[GmailToolKit] = None
+    websocket: Optional[WebSocket] = None
+    gmail_toolkit: Optional[GmailToolKit] = None
     session_job: Optional[Job] = None
     extra_data: Optional[Dict[str, Any]] = None
 

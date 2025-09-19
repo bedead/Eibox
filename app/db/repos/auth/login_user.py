@@ -34,8 +34,11 @@ def login_user(
             logger.debug(f"404: User data not found for username: {user.username}")
             raise HTTPException(status_code=404, detail="User not found")
 
+        str_data: str = cast(str, data.value)
         # Paring the safe josn values from  nested redis object
-        parsed_data: Dict[str, Any] | List[Any] | Any = safe_json_parse(data.value)
+        parsed_data: Dict[str, Any] | List[Any] | Any = safe_json_parse(
+            str_data, get="dict"
+        )
         if not isinstance(parsed_data, dict):
             logger.critical("Parsed user data is not a dictionary")
             raise HTTPException(status_code=500, detail="Invalid user data format")

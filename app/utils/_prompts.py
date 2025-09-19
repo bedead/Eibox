@@ -10,7 +10,7 @@ SEMANTIC_MEMORY_PROMPT = dedent(
     Generate a third-person semantic memory profile as a `JSON` format using the provided previous_memory and current_context. Keep it well-scoped and specific to the user, organization, or entity.
     </instruction>
     <input>
-    previous_memory: {data}
+    previous_semantic_memory: {data}
     current_context: {context}
     </input>
     <output_example>
@@ -31,7 +31,7 @@ EPISODIC_MEMORY_PROMPT = dedent(
     Generate a compact, informative episodic memory as a single paragraph using the previous_memory and current_context. Focus on summarizing relevant conversational details.
     </instruction>
     <input>
-    previous_memory: {data}
+    previous_episodic_memory: {data}
     current_context: {context}
     </input>
     <output_example>
