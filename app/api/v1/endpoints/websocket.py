@@ -1,16 +1,31 @@
-from typing import Dict, Generator, Tuple
-from fastapi import APIRouter, HTTPException, WebSocket
-from typing import List
+"""
+WebSocket and API endpoints for managing user sessions and email interactions.
+This module provides FastAPI routes for opening and closing WebSocket connections
+associated with user sessions and Gmail accounts. It handles session creation,
+email scheduler job initiation, message streaming, and session cleanup.
+Endpoints:
+    - /open/{username}/{thread_id} (WebSocket): Opens a WebSocket connection for a user and thread,
+      initializes session and email scheduler job, and streams AI responses.
+    - /close/{username}/{thread_id} (POST): Closes the WebSocket connection and cleans up the session.
+Author: Satyam Mishra
+Date: 14-09-2025
+"""
+
+from typing import Optional
+
+from fastapi import APIRouter, WebSocket
+
 from app.core.config import settings
-from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
-from app.schemas.gmail_account import GmailAccount
-from app.services.gmail.gmail_toolkit import GmailToolKit
+from app.core.logging import logger
+from app.schemas.chat_session import ChatSession
 from app.services.job_scheduler.jobs import start_email_scheduler_job
 from app.services.session.delete_session import delete_session
 from app.services.session.get_session import get_session
-from app.services.session.store_session import store_session
+from app.services.session.session_utils import (
+    close_websocket_session,
+    init_or_get_session,
+)
 from app.utils._api_helper import call_graph
-from app.core.logging import logger
 
 router = APIRouter()
 
@@ -19,6 +34,9 @@ namespace_for_memory = ("auth", "user")
 
 @router.websocket("/open/{username}/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str):
+    # pylint: disable=duplicate-code
+    # WebSocket endpoint shares logic with REST close route, intentional duplication
+
     await websocket.accept()
     logger.debug(f"Websocket connection of user - {username} is opened.")
 
@@ -29,29 +47,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
             username=username, thread_id=thread_id, interval=30
         )
 
-    session = get_session(username=username, thread_id=thread_id)
-    if not session:
-        logger.debug(
-            f"Session object not found creating new session for {username} with thread_id {thread_id}"
-        )
-        data: List[GmailAccount] = get_gmail_account(
-            username=username, namespace_for_memory=namespace_for_memory
-        )
-        # print(f"Gmail_accounts : {data}")
-        gmail_toolkit: GmailToolKit = None
-        if data and len(data) > 0:
-            gmail_toolkit = GmailToolKit(
-                gmail_account=data[0],
-            )
-
-        # store session with whatever data is available
-        store_session(
-            websocket=websocket,
-            username=username,
-            thread_id=thread_id,
-            gmail_toolkit=gmail_toolkit,
-            session_job=job if job else None,
-        )
+    session = init_or_get_session(username, thread_id, websocket, namespace_for_memory)
 
     try:
         while True:
@@ -66,7 +62,8 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
                     thread_id=thread_id,
                     streaming=streaming,
                 ):
-                    await websocket.send_text(chunk)
+                    if isinstance(chunk, str):
+                        await websocket.send_text(chunk)
             else:
                 ai_output = call_graph(
                     user_input=message,
@@ -74,14 +71,16 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
                     thread_id=thread_id,
                     streaming=streaming,
                 )
-                logger.debug(f"AI Output: {ai_output}")
-                await websocket.send_text(ai_output)
+                if isinstance(ai_output, str):
+                    logger.debug(f"AI Output: {ai_output}")
+                    await websocket.send_text(ai_output)
     except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}", exc_info=True)
+        logger.error(f"Error: {str(e)}", exc_info=True)
         try:
             await websocket.send_text(f"Error: {str(e)}")
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Websocket Error: {str(e)}", exc_info=True)
+
     finally:
         delete_session(username=username, thread_id=thread_id)
         logger.debug(f"Websocket connection of user - {username} is closed.")
@@ -90,29 +89,9 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
 
 @router.post("/close/{username}/{thread_id}")
 async def close_websocket(username: str, thread_id: str):
-    session = get_session(username, thread_id)
-    websocket = session.websocket
+    session: ChatSession = get_session(username, thread_id)
+    websocket: Optional[WebSocket | None] = session.websocket
 
-    try:
-        delete_session(username, thread_id)
-        # Already closed?
-        if websocket.client_state.name == "DISCONNECTED":
-            # cleanup stale session
-            return {
-                "status": "websocket already closed",
-                "username": username,
-                "thread_id": thread_id,
-            }
-        else:
-            await websocket.close(code=1000)  # Normal closure
-            return {
-                "status": "websocket closed and cleared session",
-                "username": username,
-                "thread_id": thread_id,
-            }
-
-    except Exception as e:
-        logger.error(f"500: Failed to close websocket: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to close websocket: {str(e)}"
-        )
+    return await close_websocket_session(
+        username=username, thread_id=thread_id, websocket=websocket
+    )

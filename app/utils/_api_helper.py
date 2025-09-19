@@ -1,9 +1,16 @@
 import hashlib
-from apscheduler.job import Job
+from typing import Any, Dict, Generator, Union
+
 import asyncio
+from apscheduler.job import Job
+from langchain_core.messages import AIMessageChunk
 
 
-def _job_to_dict(job: Job) -> dict:
+from app.services.agents.chatbot_agent import ChatAgent
+from app.services.agents.chatbot_agent.states import ChatbotState
+
+
+def job_to_dict(job: Job) -> Dict[str, Any]:
     """
     Convert an APScheduler Job object to a dictionary representation.
     """
@@ -23,40 +30,37 @@ def _job_to_dict(job: Job) -> dict:
     }
 
 
-def _job_to_str(job: Job) -> str:
+def job_to_str(job: Job) -> str:
     """
     Convert an APScheduler Job object to a str representation.
     """
-    result = _job_to_dict(job)
+    result = job_to_dict(job)
     return "".join(f"{key} : {value}" for key, value in result.items())
 
 
-def _hash_password(password: str) -> str:
+def hash_password(password: str) -> str:
     """Very basic hash, for demonstration only. Use bcrypt or Argon2 in production."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-async def _to_async_gen(sync_gen):
+async def to_async_gen(sync_gen):
     loop = asyncio.get_event_loop()
     for item in sync_gen:
         yield item
         await asyncio.sleep(0)  # let event loop breathe
 
 
-from langchain_core.messages import AIMessageChunk
-from app.services.agents.chatbot_agent import ChatAgent
-
-
-def call_graph(user_input: str, username: str, thread_id: str, streaming: bool = False):
+def call_graph(
+    user_input: str, username: str, thread_id: str, streaming: bool = False
+) -> Union[str, Generator[Union[str, list[str | Dict[str, Any]]], None, None]]:
+    state = ChatbotState(
+        messages=[{"role": "user", "content": user_input}],
+    )
     if streaming:
         # Streaming mode → generator
         def _stream():
-            for chunk in ChatAgent.stream(  # <-- keep .stream, not .astream here
-                input={
-                    "messages": [{"role": "user", "content": user_input}],
-                    "semantic_memory": "",
-                    "episodic_memory": "",
-                },
+            for chunk in ChatAgent.stream(
+                input=state,
                 config={
                     "configurable": {
                         "thread_id": thread_id,
@@ -78,12 +82,8 @@ def call_graph(user_input: str, username: str, thread_id: str, streaming: bool =
 
     else:
         # Non-streaming mode → plain string
-        response = ChatAgent.invoke(
-            input={
-                "messages": [{"role": "user", "content": user_input}],
-                "semantic_memory": "",
-                "episodic_memory": "",
-            },
+        response: Any = ChatAgent.invoke(
+            input=state,
             config={
                 "configurable": {
                     "thread_id": thread_id,
@@ -95,8 +95,8 @@ def call_graph(user_input: str, username: str, thread_id: str, streaming: bool =
         )
 
         # response["chatbot"] is likely a list
-        print(type(response))
-        chatbot_output = response[-1]['chatbot']
+        # print(type(response))
+        chatbot_output = response[-1]["chatbot"]
         if chatbot_output:
             messages = chatbot_output.get("messages")[0]
             if messages:

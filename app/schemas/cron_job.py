@@ -1,3 +1,12 @@
+"""
+Cron job schema definition.
+
+This module defines the `CronJobSchema` model, which represents the data
+required to manage cron jobs for a user. It includes the username and
+thread ID as required fields, with descriptive metadata for validation
+and documentation.
+"""
+
 from pydantic import BaseModel, Field
 
 

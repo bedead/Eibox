@@ -1,21 +1,28 @@
 import time
 from app.core.logging import logger
-from fastapi import Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 
-def add_middleware(app):
+from typing import Callable, Awaitable
+from starlette.responses import Response
+
+
+def add_middleware(app: FastAPI):
     """Attach custom middlewares to the FastAPI app."""
 
     @app.middleware("http")
-    async def log_and_handle_errors(request: Request, call_next):
+    # This function is registered as middleware and does not need to be accessed directly.
+    async def log_and_handle_errors(  # type: ignore
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response | JSONResponse:
         start_time = time.time()
         try:
             # Process the request
-            response = await call_next(request)
+            response: Response = await call_next(request)
 
             # Add process time header
-            process_time = time.time() - start_time
+            process_time: float = time.time() - start_time
             response.headers["X-Process-Time"] = f"{process_time:.4f}s"
             logger.debug(
                 f"✅ {request.method} {request.url.path} [{response.status_code}] in {process_time:.4f}s"

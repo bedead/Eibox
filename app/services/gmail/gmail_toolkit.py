@@ -1,12 +1,12 @@
-import os
 import time
 import base64
 import threading
-import requests
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, Callable
+from typing import Any, Dict, List, Optional
+
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
+
 from app.core.logging import logger
 from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
 from app.schemas.gmail_account import GmailAccount
@@ -31,7 +31,7 @@ class GmailToolKit:
             interval: int = 5 - Time interval in seconds for checking new emails.
             max_results: int = 1 - Maximum number of emails to fetch in each check.
         """
-        self.gmail_account = gmail_account
+        self.gmail_account: GmailAccount = gmail_account
         self.run_as_thread = run_as_thread
         self.max_results = max_results
         self.interval = interval

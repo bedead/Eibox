@@ -1,3 +1,7 @@
+"""
+HTML & CSS Templates for rendering GMAIL OAUTH success and error data.
+"""
+
 CALLBACK_SUCCESS_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="en">

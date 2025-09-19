@@ -1,10 +1,24 @@
-import json
+"""
+Gmail account management service.
+
+This module provides helper functions for adding and updating Gmail accounts
+associated with a specific user in persistent storage. It integrates with
+the database repository layer for fetching and saving Gmail account records.
+
+Functions:
+    add_gmail_account(new_account: GmailAccount, namespace_for_memory: Tuple[str, str]):
+        Adds or updates a Gmail account for the given user. If an account with the
+        same email already exists, it will be replaced with the new account data.
+        The updated list of accounts is then saved back to the storage.
+"""
+
 from typing import List, Tuple
 
 from fastapi import HTTPException
+
 from app.schemas.gmail_account import GmailAccount
-from .save_gmail_accounts import save_gmail_account
-from .get_gmail_accounts import get_gmail_account
+from app.db.repos.gmail.save_gmail_accounts import save_gmail_account
+from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 
 
 def add_gmail_account(new_account: GmailAccount, namespace_for_memory: Tuple[str, str]):

@@ -1,5 +1,12 @@
+"""
+Gmail account schema definition.
+
+This module defines the `GmailAccount` model, which represents the structure
+for storing Gmail account credentials and metadata. It includes details such
+as username, email, access/refresh tokens, token expiry, and scopes.
+"""
+
 from typing import List, Optional
-from datetime import datetime
 from pydantic import BaseModel, EmailStr
 
 

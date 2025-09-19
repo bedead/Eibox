@@ -1,11 +1,27 @@
-from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+"""
+Endpoints for Gmail OAuth authentication flow.
+This module provides FastAPI routes to start the Gmail OAuth process, handle the OAuth callback,
+and check the status of the OAuth flow for a given mobile session.
+Routes:
+    /gmail/start: Initiates the Gmail OAuth flow for a user.
+    /gmail/callback: Handles the OAuth callback from Google and saves account information.
+    /gmail/status/{mobile_session_id}: Checks if the OAuth flow has been completed for a mobile session.
+Author: Satyam Mishra
+Date: 14-09-2025
+"""
+
+from typing import Any, Dict, cast
 import requests
-from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
-from app.db.repos.auth.update_user_data import update_user_data as uud
-from google_auth_oauthlib.flow import Flow
 import secrets
 from datetime import datetime, timedelta, timezone
+
+from google_auth_oauthlib.flow import Flow
+from google.auth.credentials import Credentials
+from fastapi import APIRouter, Query, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+
+from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
+from app.db.repos.auth.update_user_data import update_user_data as uud
 from app.services.gmail.gmail_toolkit import GmailAccount
 from app.core.config import settings
 from app.utils._oauth_templates import (
@@ -25,7 +41,7 @@ OAUTH_REDIRECT_URI: str = get_gmail_redirect_uri()
 router = APIRouter()
 namespace_for_memory = ("auth", "user")
 
-oauth_states = {}
+oauth_states: Dict[str, Any] = {}
 
 
 @router.get("/gmail/start")
@@ -39,8 +55,8 @@ async def start_gmail_oauth(
         )
 
     # Create OAuth flow
-    flow = Flow.from_client_config(
-        {
+    flow: Flow = Flow.from_client_config(
+        client_config={
             "web": {
                 "client_id": GOOGLE_CLIENT_ID,
                 "client_secret": GOOGLE_CLIENT_SECRET,
@@ -54,7 +70,7 @@ async def start_gmail_oauth(
     flow.redirect_uri = OAUTH_REDIRECT_URI
 
     # Generate state
-    state = secrets.token_urlsafe(32)
+    state: str = secrets.token_urlsafe(32)
 
     # Store state
     oauth_states[state] = {
@@ -73,7 +89,7 @@ async def start_gmail_oauth(
         include_granted_scopes="true",
     )
 
-    return RedirectResponse(authorization_url)
+    return RedirectResponse(url=cast(str, authorization_url))
 
 
 @router.get("/gmail/callback")
@@ -88,7 +104,7 @@ async def gmail_oauth_callback(request: Request):
                 )
             )
 
-        state_info = oauth_states[state]
+        state_info: Dict[str, Any] = oauth_states[state]
         if datetime.now() > state_info["expires_at"]:
             del oauth_states[state]
             return HTMLResponse(
@@ -96,7 +112,7 @@ async def gmail_oauth_callback(request: Request):
             )
 
         # OAuth flow
-        flow = Flow.from_client_config(
+        flow: Flow = Flow.from_client_config(  # type: ignore
             {
                 "web": {
                     "client_id": GOOGLE_CLIENT_ID,
@@ -112,7 +128,7 @@ async def gmail_oauth_callback(request: Request):
         flow.redirect_uri = OAUTH_REDIRECT_URI
         flow.fetch_token(authorization_response=str(request.url))
 
-        credentials = flow.credentials
+        credentials: Credentials = flow.credentials
 
         # Get user info
         user_info_response = requests.get(
@@ -122,7 +138,7 @@ async def gmail_oauth_callback(request: Request):
         user_info = user_info_response.json()
 
         # converting datetime to utc timezone and then calculating expires_in time in seconds
-        expiry = credentials.expiry
+        expiry: datetime = credentials.expiry  # type: ignore
         if expiry.tzinfo is None:
             expiry = expiry.replace(tzinfo=timezone.utc)
         expires_in: int = int((expiry - datetime.now(timezone.utc)).total_seconds())
@@ -130,8 +146,8 @@ async def gmail_oauth_callback(request: Request):
         account_data = GmailAccount(
             username=state_info["username"],
             email=user_info.get("email"),
-            access_token=credentials.token,
-            refresh_token=credentials.refresh_token,
+            access_token=str(credentials.token),
+            refresh_token=str(credentials.refresh_token),
             expires_in=expires_in,
             token_type="Bearer",
             scope=settings.GOOGLE_GMAIL_SCOPE,

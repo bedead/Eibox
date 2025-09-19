@@ -1,8 +1,10 @@
-from typing import Any, Dict, Literal, Optional, TypedDict, Annotated
+from typing import Optional, Annotated
+
 from langgraph.graph.message import add_messages
+from pydantic import BaseModel
 
 
-class ChatbotState(TypedDict):
+class ChatbotState(BaseModel):
     """
     Represents the state of a main agent in a graph.
     """
@@ -10,8 +12,8 @@ class ChatbotState(TypedDict):
     memory_update_counter: int = 3
 
     # contextual information
-    semantic_memory: Optional[str] = ""
-    episodic_memory: Optional[str] = ""
-
+    semantic_memory: str = ""
+    episodic_memory: str = ""
+    
     # Tracking workflow message history
     messages: Annotated[list, add_messages]

@@ -1,4 +1,12 @@
-from typing import Any, Dict, List, Literal, Optional
+"""
+User model schema.
+
+This module defines the `UserModel` class, which represents a user entity
+with core details such as credentials, account type, and application settings.
+It is primarily used for user-related database operations and validation.
+"""
+
+from typing import Any, Dict, Literal, Optional
 from pydantic import Field, BaseModel, EmailStr
 
 
