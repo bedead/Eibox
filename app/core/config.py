@@ -31,13 +31,15 @@ class Settings(BaseSettings):
     ]
 
     # App settings details
-    RUN_JOB_SCHEDULER: bool = False
     SCHEDULER_API_ENABLED: bool = False
     if API_DEV_SERVER:
         LOG_TYPE: str = "debug"  # "info" or "debug" for Dev Server
+        RUN_JOB_SCHEDULER: bool = False
     else:
-        LOG_TYPE: str = "info" # for Prod Server
+        LOG_TYPE: str = "info"  # for Prod Server
+        RUN_JOB_SCHEDULER: bool = True
     LOG_FOLDER_NAME: str = "log_dump"
+    RUN_JOB_SCHEDULER: bool = False  # default set to false to reduce overhead
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

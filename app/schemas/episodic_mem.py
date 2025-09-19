@@ -1,0 +1,2 @@
+class EpisodicMemSchema:
+    pass
