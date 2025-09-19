@@ -6,7 +6,7 @@ from app.services.job_scheduler.jobs import (
     start_email_scheduler_job,
 )
 from langchain_core.runnables import RunnableConfig
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from langchain_core.tools import tool
 
 from app.services.session.get_session import get_session
@@ -91,7 +91,7 @@ def search_gmails_tool(
     locations: Optional[List[str]] = None,  # ["in:spam", "in:trash", "in:inbox"]
     extra_filters: Optional[List[str]] = None,  # ["has:drive", "is:snoozed"]
     page_token: Optional[str] = None,
-) -> List[dict]:
+) -> Dict[str, Any]:
     """
     Fetches Gmail messages using advanced, fine-grained search filters.
 
@@ -152,39 +152,45 @@ def search_gmails_tool(
         )
     """
     session: ChatSession = get_session(username=username, thread_id=thread_id)
-    gmail_toolkit: GmailToolKit = session.gmail_toolkit
-    try:
-        data: List[dict] = gmail_toolkit.check_emails(
-            from_date=from_date,
-            max_results=max_results,
-            to_date=to_date,
-            query=query,
-            subject=subject,
-            sender=sender,
-            recipient=recipient,
-            is_read=is_read,
-            is_starred=is_starred,
-            is_important=is_important,
-            has_attachment=has_attachment,
-            filename=filename,
-            larger_than=larger_than,
-            categories=categories,
-            labels=labels,
-            locations=locations,
-            extra_filters=extra_filters,
-            page_token=page_token,
-        )
-        return {
-            "status": "success",
-            "result": data,
-        }
+    if session.gmail_toolkit:
+        gmail_toolkit: GmailToolKit = session.gmail_toolkit
+        try:
+            data: List[Dict[str, Any]] = gmail_toolkit.check_emails(
+                from_date=from_date,
+                max_results=max_results,
+                to_date=to_date,
+                query=query,
+                subject=subject,
+                sender=sender,
+                recipient=recipient,
+                is_read=is_read,
+                is_starred=is_starred,
+                is_important=is_important,
+                has_attachment=has_attachment,
+                filename=filename,
+                larger_than=larger_than,
+                categories=categories,
+                labels=labels,
+                locations=locations,
+                extra_filters=extra_filters,
+                page_token=page_token,
+            )
+            return {
+                "status": "success",
+                "result": data,
+            }
 
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+    else:
+        return {
+            "status": "info",
+            "info": f"User: {session.username} has not connected Any Gmail account yet.",
+        }
 
 
 @tool
-def delete_email_tool(username: str, thread_id: str, message_id: str) -> dict:
+def delete_email_tool(username: str, thread_id: str, message_id: str) -> Dict[str, Any]:
     """
     Deletes a specific email from the user's Gmail account.
 
@@ -197,13 +203,19 @@ def delete_email_tool(username: str, thread_id: str, message_id: str) -> dict:
         dict: A dictionary containing the status of the deletion operation.
               Example: {"status": "success"} or {"status": "error", "error": "Error message"}
     """
-    session = get_session(username=username, thread_id=thread_id)
-    gmail_toolkit = session.gmail_toolkit
-    try:
-        gmail_toolkit.delete_email(message_id=message_id)
-        return {"status": "success"}
-    except Exception as e:
-        return {"status": "error", "error": str(e)}
+    session: ChatSession = get_session(username=username, thread_id=thread_id)
+    if session.gmail_toolkit:
+        gmail_toolkit: GmailToolKit = session.gmail_toolkit
+        try:
+            gmail_toolkit.delete_email(message_id=message_id)
+            return {"status": "success"}
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+    else:
+        return {
+            "status": "info",
+            "info": f"User: {session.username} has not connected Any Gmail account yet.",
+        }
 
 
 @tool
