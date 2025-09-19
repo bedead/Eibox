@@ -23,7 +23,7 @@ def store_session(
     session = ChatSession(
         username=username,
         thread_id=thread_id,
-        toolkit=gmail_toolkit,
+        gmail_toolkit=gmail_toolkit,
         websocket=websocket,
         session_job=session_job,
         extra_data=extra_data,

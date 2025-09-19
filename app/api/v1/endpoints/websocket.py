@@ -35,6 +35,9 @@ namespace_for_memory = ("auth", "user")
 
 @router.websocket("/open/{username}/{thread_id}")
 async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str):
+    # pylint: disable=duplicate-code
+    # WebSocket endpoint shares logic with REST close route, intentional duplication
+
     await websocket.accept()
     logger.debug(f"Websocket connection of user - {username} is opened.")
 
@@ -73,11 +76,12 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
                     logger.debug(f"AI Output: {ai_output}")
                     await websocket.send_text(ai_output)
     except Exception as e:
-        logger.error(f"WebSocket error: {str(e)}", exc_info=True)
+        logger.error(f"Error: {str(e)}", exc_info=True)
         try:
             await websocket.send_text(f"Error: {str(e)}")
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Websocket Error: {str(e)}", exc_info=True)
+
     finally:
         delete_session(username=username, thread_id=thread_id)
         logger.debug(f"Websocket connection of user - {username} is closed.")

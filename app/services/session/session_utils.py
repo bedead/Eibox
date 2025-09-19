@@ -34,6 +34,8 @@ def init_or_get_session(
             gmail_account=data[0],
         )
 
+    # print(f"Gmail data: {data}")
+
     store_session(
         username=username,
         thread_id=thread_id,

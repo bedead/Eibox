@@ -50,6 +50,9 @@ def get_google_account(token: GoogleAccountRequest):
 
 @router.websocket("/chatbot/{username}/{thread_id}")
 async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: str):
+    # pylint: disable=duplicate-code
+    # Test endpoint shares logic with REST close route, intentional duplication
+
     await websocket.accept()
     logger.debug(f"Websocket connection of user - {username} is opened.")
     # job = start_email_scheduler_job(
@@ -64,7 +67,11 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
             await websocket.send_text(f"AI : {message} - from {username}")
 
     except Exception as e:
-        await websocket.send_text(f"Error: {str(e)}")
+        logger.error(f"Error: {str(e)}", exc_info=True)
+        try:
+            await websocket.send_text(f"Error: {str(e)}")
+        except Exception as e:
+            logger.error(f"Websocket Error: {str(e)}", exc_info=True)
     finally:
         delete_session(username=username, thread_id=thread_id)
         logger.debug(f"Websocket connection of user - {username} is closed.")
