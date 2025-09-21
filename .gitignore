@@ -17,6 +17,7 @@ copilot_auto_commit_instructions.txt
 dev-requirements.txt
 thought_dump.txt
 .zencoder
+.pytest_cache
 
 # Ignore Python cache files
 __pycache__/
