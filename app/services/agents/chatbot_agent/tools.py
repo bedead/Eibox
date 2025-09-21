@@ -25,48 +25,51 @@ def get_userdetails_tool(config: RunnableConfig):
             - "username" (str): The unique username.
             - "thread_id" (str): The ID representing the current conversation or chat instance.
     """
+    configurable: Dict[str, Any] | None = config.get("configurable")
 
+    if configurable is None:
+        raise ValueError("Configurable data not found in config.")
     return {
-        "username": config["configurable"].get("username"),
-        "thread_id": config["configurable"].get("thread_id"),
+        "username": configurable.get("username"),
+        "thread_id": configurable.get("thread_id"),
     }
 
 
-@tool
-def start_email_scheduler_job_tool(username: str, thread_id: str, interval: int):
-    """
-    Starts a scheduled background job that periodically checks or processes emails
-    related to a specific user and thread.
+# @tool
+# def start_email_scheduler_job_tool(username: str, thread_id: str, interval: int):
+#     """
+#     Starts a scheduled background job that periodically checks or processes emails
+#     related to a specific user and thread.
 
-    Args:
-        username (str): The unique username.
-        thread_id (str): The unique identifier of the email thread to track.
-        interval (int): The frequency (in seconds) at which the job should run.
+#     Args:
+#         username (str): The unique username.
+#         thread_id (str): The unique identifier of the email thread to track.
+#         interval (int): The frequency (in seconds) at which the job should run.
 
-    Returns:
-        Job: The background job instance that was started.
-    """
-    job: Job = start_email_scheduler_job(
-        username=username, thread_id=thread_id, interval=interval
-    )
-    return job
+#     Returns:
+#         Job: The background job instance that was started.
+#     """
+#     job: Job = start_email_scheduler_job(
+#         username=username, thread_id=thread_id, interval=interval
+#     )
+#     return job
 
 
-@tool
-def delete_email_scheduler_job_tool(username: str, thread_id: str):
-    """
-    Deletes or stops an existing scheduled job that was set to process or monitor
-    emails for a specific user and thread.
+# @tool
+# def delete_email_scheduler_job_tool(username: str, thread_id: str):
+#     """
+#     Deletes or stops an existing scheduled job that was set to process or monitor
+#     emails for a specific user and thread.
 
-    Args:
-        username (str): The unique username.
-        thread_id (str): The unique identifier of the thread whose job should be deleted.
+#     Args:
+#         username (str): The unique username.
+#         thread_id (str): The unique identifier of the thread whose job should be deleted.
 
-    Returns:
-        Dict['status':]: status is "success" if job removed, and Exception e is returned in status.
-    """
-    result = delete_email_scheduler_job(username, thread_id)
-    return result
+#     Returns:
+#         Dict['status':]: status is "success" if job removed, and Exception e is returned in status.
+#     """
+#     result = delete_email_scheduler_job(username, thread_id)
+#     return result
 
 
 @tool
@@ -218,34 +221,19 @@ def delete_email_tool(username: str, thread_id: str, message_id: str) -> Dict[st
         }
 
 
-@tool
-def get_current_dateandtime():
-    """
-    Returns the current date and time in ISO 8601 format.
+# @tool
+# def get_day_of_week() -> str:
+#     """
+#     Returns the current day of the week (e.g., Monday, Tuesday).
 
-    This function is useful for logging or timestamping events in a standardized way.
+#     Useful for scheduling tasks or contextualizing events based on the weekday.
 
-    Returns:
-        str: The current date and time as an ISO 8601 formatted string.
-    """
-    from datetime import datetime
+#     Returns:
+#         str: The current day of the week.
+#     """
+#     from datetime import datetime
 
-    return datetime.now().isoformat()
-
-
-@tool
-def get_day_of_week() -> str:
-    """
-    Returns the current day of the week (e.g., Monday, Tuesday).
-
-    Useful for scheduling tasks or contextualizing events based on the weekday.
-
-    Returns:
-        str: The current day of the week.
-    """
-    from datetime import datetime
-
-    return datetime.now().strftime("%A")
+#     return datetime.now().strftime("%A")
 
 
 # @tool
@@ -314,6 +302,5 @@ all_tools = [
     get_userdetails_tool,
     search_gmails_tool,
     delete_email_tool,
-    get_current_dateandtime,
     # is_weekend,
 ]

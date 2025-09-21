@@ -1,7 +1,6 @@
 import hashlib
-from typing import Any, Dict, Generator, Union
+from typing import Any, Dict, AsyncGenerator
 
-import asyncio
 from apscheduler.job import Job
 from langchain_core.messages import AIMessageChunk
 
@@ -43,23 +42,38 @@ def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-async def to_async_gen(sync_gen):
-    loop = asyncio.get_event_loop()
-    for item in sync_gen:
-        yield item
-        await asyncio.sleep(0)  # let event loop breathe
+def _to_text(content: Any) -> str:
+    # Normalize content to string for consistent generator typing
+    if isinstance(content, list):
+        parts: list[str] = []
+        for part in content:
+            if isinstance(part, str):
+                parts.append(part)
+            elif isinstance(part, dict):
+                # common LangChain content dicts may have 'text'
+                text = part.get("text")
+                if isinstance(text, str):
+                    parts.append(text)
+                else:
+                    # best-effort fallback
+                    parts.append(str(part))
+            else:
+                parts.append(str(part))
+        return "".join(parts)
+    return content if isinstance(content, str) else str(content)
 
 
-def call_graph(
+async def call_graph(
     user_input: str, username: str, thread_id: str, streaming: bool = False
-) -> Union[str, Generator[Union[str, list[str | Dict[str, Any]]], None, None]]:
+) -> AsyncGenerator[str, None]:
     state = ChatbotState(
         messages=[{"role": "user", "content": user_input}],
     )
+
     if streaming:
-        # Streaming mode → generator
-        def _stream():
-            for chunk in ChatAgent.stream(
+        # Streaming mode → yield tokens
+        async def _stream_token() -> AsyncGenerator[str, None]:
+            async for chunk in ChatAgent.astream(
                 input=state,
                 config={
                     "configurable": {
@@ -76,29 +90,35 @@ def call_graph(
                         isinstance(message_chunk, AIMessageChunk)
                         and metadata["langgraph_node"] == "chatbot"
                     ):
-                        yield message_chunk.content
+                        yield _to_text(message_chunk.content)
 
-        return _stream()  # returns generator
+        return _stream_token()
 
     else:
-        # Non-streaming mode → plain string
-        response: Any = ChatAgent.invoke(
-            input=state,
-            config={
-                "configurable": {
-                    "thread_id": thread_id,
-                    "username": username,
-                }
-            },
-            stream_mode="updates",
-            print_mode="updates",
-        )
+        # Non-streaming mode → yield whole chatbot messages (step-level)
+        async def _stream_messages() -> AsyncGenerator[str, None]:
+            async for chunk in ChatAgent.astream(  # <- sync generator
+                input=state,
+                config={
+                    "configurable": {
+                        "thread_id": thread_id,
+                        "username": username,
+                    }
+                },
+                stream_mode="updates",
+                # print_mode="updates",
+            ):
+                # Debug
+                print(f"Chunk: {chunk}")
+                if not isinstance(chunk, dict):
+                    continue
 
-        # response["chatbot"] is likely a list
-        # print(type(response))
-        chatbot_output = response[-1]["chatbot"]
-        if chatbot_output:
-            messages = chatbot_output.get("messages")[0]
-            if messages:
-                return messages.content
-        return "[ERROR] No response from AI"
+                chatbot_output = chunk.get("chatbot")
+                if chatbot_output:
+                    m = chatbot_output.get("messages", [])[0]
+                    if m and hasattr(m, "content"):
+                        response = _to_text(m.content)
+                        if response and response != "":
+                            yield response
+
+        return _stream_messages()

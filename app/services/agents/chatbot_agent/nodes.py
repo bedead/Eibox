@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from typing import List, Dict, Any, cast
 
@@ -182,6 +183,9 @@ def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Co
         ),
         semantic_memory=semantic_memory if semantic_memory else "",
         episodic_memory=episodic_memory if episodic_memory else "",
+        CURRENT_DATE=datetime.now().strftime("%Y-%m-%d"),
+        CURRENT_TIME=datetime.now().strftime("%H:%M %p"),
+        TIMEZONE=datetime.now().astimezone().tzname(),
     )
 
     messages = [

@@ -55,25 +55,16 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
 
             # Decide whether to stream or not
             streaming = False
-            if streaming:
-                for chunk in call_graph(
-                    user_input=message,
-                    username=username,
-                    thread_id=thread_id,
-                    streaming=streaming,
-                ):
-                    if isinstance(chunk, str):
-                        await websocket.send_text(chunk)
-            else:
-                ai_output = call_graph(
-                    user_input=message,
-                    username=username,
-                    thread_id=thread_id,
-                    streaming=streaming,
-                )
+            async for ai_output in await call_graph(
+                user_input=message,
+                username=username,
+                thread_id=thread_id,
+                streaming=streaming,
+            ):
                 if isinstance(ai_output, str):
                     logger.debug(f"AI Output: {ai_output}")
                     await websocket.send_text(ai_output)
+
     except Exception as e:
         logger.error(f"Error: {str(e)}", exc_info=True)
         try:
