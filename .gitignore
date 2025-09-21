@@ -16,6 +16,7 @@ redis_connection.json
 copilot_auto_commit_instructions.txt
 dev-requirements.txt
 thought_dump.txt
+.zencoder
 
 # Ignore Python cache files
 __pycache__/

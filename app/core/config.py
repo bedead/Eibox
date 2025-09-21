@@ -1,18 +1,22 @@
+import os
 from typing import List
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # App details
-    APP_NAME: str = "Eibox"
-    APP_DESCIPTION: str = ""
-    APP_SUMMARY: str = ""
-    APP_VERSION: str = "0.1.1"
+    APP_NAME: str = os.environ.get("APP_NAME", "")
+    APP_DESCIPTION: str = os.environ.get("APP_DESCIPTION", "")
+    APP_SUMMARY: str = os.environ.get("APP_SUMMARY", "")
+    APP_VERSION: str = os.environ.get("APP_VERSION", "")
 
     # API details
     # TODO: Use this API prefix in all routers and remove the existing hardcoded prefixes in the specific routers
     API_V1_STR: str = "/api/v1"
-    API_DEV_SERVER: bool = True  # Turn False if want to use PRODUCTIOn SERVER URL
+    API_DEV_SERVER: bool = (
+        os.environ.get("API_DEV_SERVER", "True").lower() == "true"
+    )  # Turn False if want to use PRODUCTIOn SERVER URL
 
     # Storage config details
     REDIS_URL: str = ""  # TODO: read from secret env file
