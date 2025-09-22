@@ -19,6 +19,7 @@ def setup_logging() -> logging.Logger:
     log_type: str = settings.LOG_TYPE
 
     root_logger = logging.getLogger("Eibox")
+    root_logger.propagate = False  # prevent duplicate logs
 
     # Clear duplicate handlers if any (important when re-running in dev)
     if root_logger.hasHandlers():
