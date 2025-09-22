@@ -5,6 +5,7 @@ from apscheduler.job import Job
 from langchain_core.messages import AIMessageChunk
 
 
+from app.core.logging import logger
 from app.services.agents.chatbot_agent import ChatAgent
 from app.services.agents.chatbot_agent.states import ChatbotState
 
@@ -82,7 +83,7 @@ async def call_graph(
                     }
                 },
                 stream_mode="messages",
-                debug=True,
+                # debug=True,
             ):
                 if isinstance(chunk, tuple):
                     message_chunk, metadata = chunk
@@ -109,7 +110,7 @@ async def call_graph(
                 # print_mode="updates",
             ):
                 # Debug
-                print(f"Chunk: {chunk}")
+                # logger.debug(f"Chunk: {chunk}")
                 if not isinstance(chunk, dict):
                     continue
 

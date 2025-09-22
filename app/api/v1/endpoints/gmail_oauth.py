@@ -22,7 +22,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
 from app.db.repos.auth.update_user_data import update_user_data as uud
-from app.services.gmail.gmail_toolkit import GmailAccount
+from app.schemas.gmail_account import GmailAccount
 from app.core.config import settings
 from app.utils._oauth_templates import (
     CALLBACK_ERROR_TEMPLATE,

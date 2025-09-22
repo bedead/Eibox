@@ -4,7 +4,7 @@ from fastapi import WebSocket
 
 from app.schemas.chat_session import ChatSession
 from app.core.logging import logger
-from app.services.gmail.gmail_toolkit import GmailToolKit
+from app.services.gmail_toolkit import GmailToolKit
 from apscheduler.job import Job
 
 active_sessions: Dict[Tuple[str, str], ChatSession] = {}

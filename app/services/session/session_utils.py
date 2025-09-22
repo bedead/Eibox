@@ -6,7 +6,7 @@ from app.core.logging import logger
 from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
 from app.schemas.chat_session import ChatSession
 from app.schemas.gmail_account import GmailAccount
-from app.services.gmail.gmail_toolkit import GmailToolKit
+from app.services.gmail_toolkit import GmailToolKit
 from app.services.session.delete_session import delete_session
 from app.services.session.get_session import get_session
 from app.services.session.store_session import store_session

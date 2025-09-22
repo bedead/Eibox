@@ -18,7 +18,7 @@ from fastapi import APIRouter, WebSocket
 from app.core.config import settings
 from app.core.logging import logger
 from app.schemas.chat_session import ChatSession
-from app.services.job_scheduler.jobs import start_email_scheduler_job
+from app.services.jobs import start_email_scheduler_job
 from app.services.session.delete_session import delete_session
 from app.services.session.get_session import get_session
 from app.services.session.session_utils import (

@@ -15,7 +15,7 @@ from apscheduler.job import Job
 from fastapi import WebSocket
 from pydantic import BaseModel
 
-from app.services.gmail.gmail_toolkit import GmailToolKit
+from app.services.gmail_toolkit import GmailToolKit
 
 
 class ChatSession(BaseModel):
