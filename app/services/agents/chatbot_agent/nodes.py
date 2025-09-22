@@ -8,10 +8,13 @@ from langgraph.store.base import BaseStore, Item
 from langchain_core.runnables import RunnableConfig
 from langchain.chat_models import init_chat_model
 
+from app.schemas.episodic_mem import EpisodicMemSchema
+from app.schemas.semantic_mem import SemanticMemSchema
 from app.services.agents.chatbot_agent.tools import all_tools
 from app.core.logging import logger
 from app.core.config import settings
 from app.services.agents.chatbot_agent.states import ChatbotState
+from app.utils._api_helper import _to_text
 from app.utils._prompts import (
     CHATBOT_SYSTEM_INSTRUCTION,
     EPISODIC_MEMORY_PROMPT,
@@ -49,65 +52,69 @@ def context_update(
                 namespace=namespace_for_memory, key=episodic_memory_key
             )
 
-            if semantic_memory and episodic_memory:
-                llm = init_chat_model(
-                    model="google_genai:gemini-1.5-flash", temperature=0.5
-                )
-                # Call LLM if semantic memory is available
-                # update data
-                updated_semantic_memory = llm.invoke(
-                    SEMANTIC_MEMORY_PROMPT.replace(
-                        "{data}", json.dumps(semantic_memory.value, ensure_ascii=False)
-                    ).replace(
-                        "{context}", str(state.messages) if state.messages else ""
-                    )
-                )
+            llm = init_chat_model(
+                model="google_genai:gemini-1.5-flash", temperature=0.5
+            )
+            # Call LLM if semantic memory is available
+            # update data
+            updated_semantic_memory = llm.invoke(
+                SEMANTIC_MEMORY_PROMPT.replace(
+                    "{data}",
+                    (
+                        json.dumps(semantic_memory.value, ensure_ascii=False)
+                        if semantic_memory
+                        else "{}"
+                    ),
+                ).replace("{context}", str(state.messages) if state.messages else "")
+            )
 
-                logger.debug(
-                    f"updated_semantic_memory : {updated_semantic_memory.content}"
-                )
-                logger.debug(
-                    f"type of updated_semantic_memory : {type(updated_semantic_memory.content)}"
-                )
-                # updated_semantic_memory = clean_and_parse_ai_output(
-                #     updated_semantic_memory.content
-                # )
-                # print("Updated Semantic Memory:", updated_semantic_memory)
+            parsed_sem_mem = SemanticMemSchema.model_validate_json(
+                _to_text(updated_semantic_memory.content)
+            )
 
-                # store updated semantic memory
-                store.put(
-                    namespace=namespace_for_memory,
-                    key=semantic_memory_key,
-                    value=updated_semantic_memory.content,  # type: ignore
-                )
+            # store updated semantic memory
+            store.put(
+                namespace=namespace_for_memory,
+                key=semantic_memory_key,
+                value=parsed_sem_mem.model_json_schema(),
+            )
 
-                updated_episodic_memory = llm.invoke(
-                    EPISODIC_MEMORY_PROMPT.replace(
-                        "{data}", json.dumps(episodic_memory.value, ensure_ascii=False)
-                    ).replace(
-                        "{context}",
-                        str(state.messages) if state.messages else "",
-                    )
+            updated_episodic_memory = llm.invoke(
+                EPISODIC_MEMORY_PROMPT.replace(
+                    "{data}",
+                    (
+                        json.dumps(episodic_memory.value, ensure_ascii=False)
+                        if episodic_memory
+                        else "{}"
+                    ),
+                ).replace(
+                    "{context}",
+                    str(state.messages) if state.messages else "",
                 )
+            )
 
-                # store updated episodic memory
-                store.put(
-                    namespace=namespace_for_memory,
-                    key=episodic_memory_key,
-                    value=updated_episodic_memory.content,  # type: ignore
-                )
+            parsed_epi_mem = EpisodicMemSchema.model_validate_json(
+                _to_text(updated_episodic_memory.content)
+            )
 
-                return Command(
-                    update={
-                        "semantic_memory": (
-                            updated_semantic_memory if updated_semantic_memory else ""
-                        ),
-                        "episodic_memory": (
-                            updated_episodic_memory if updated_episodic_memory else ""
-                        ),
-                        "memory_update_counter": 3,
-                    }
-                )
+            # store updated episodic memory
+            store.put(
+                namespace=namespace_for_memory,
+                key=episodic_memory_key,
+                value=parsed_epi_mem.model_json_schema(),
+            )
+
+            return Command(
+                update={
+                    "semantic_memory": (
+                        updated_semantic_memory if updated_semantic_memory else ""
+                    ),
+                    "episodic_memory": (
+                        updated_episodic_memory if updated_episodic_memory else ""
+                    ),
+                    "memory_update_counter": 3,
+                }
+            )
         else:
             logger.warning(
                 f"Chat Agent Graph doesn't seems to have RunnableConfig, check Websocket api module for errors.",

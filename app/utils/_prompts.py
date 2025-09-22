@@ -2,44 +2,60 @@
 System prompts for all the agents and tasks execution.
 """
 
-from datetime import datetime
 from textwrap import dedent
 
 SEMANTIC_MEMORY_PROMPT = dedent(
     """
-    <instruction>
-    Generate a third-person semantic memory profile as a `JSON` format using the provided previous_memory and current_context. Keep it well-scoped and specific to the user, organization, or entity.
-    </instruction>
-    <input>
-    previous_semantic_memory: {data}
-    current_context: {context}
-    </input>
-    <output_example>
-    {
-        "full name": "satyam mishra", 
-        "emails": ["xyz@gmail.com","others@gmail.com"],
-        "works at": "Google",
-        "lcoation": "India, MP",
-        "interests": ["AI", "ML", "Python"],
-    }
-    </output_example>
-    """
+<instruction>
+Update the user’s semantic memory profile in STRICT JSON format matching the given schema.
+Include only useful, persistent facts (name, emails, work, interests, skills, preferences).
+Exclude greetings, small talk, or trivial conversational noise.
+</instruction>
+
+<schema>
+{
+  "full_name": "string | null",
+  "emails": ["string"],
+  "works_at": "string | null",
+  "location": "string | null",
+  "interests": ["string"],
+  "skills": ["string"],
+  "preferences": ["string"]
+}
+</schema>
+
+<input>
+previous_semantic_memory: {data}
+current_context: {context}
+</input>
+"""
 )
+
 
 EPISODIC_MEMORY_PROMPT = dedent(
     """
-    <instruction>
-    Generate a compact, informative episodic memory as a single paragraph using the previous_memory and current_context. Focus on summarizing relevant conversational details.
-    </instruction>
-    <input>
-    previous_episodic_memory: {data}
-    current_context: {context}
-    </input>
-    <output_example>
-    Satyam Mishra doesn't like to work on weekends. In the last conversation, he liked the response to be more to the point. In one of the conversation, the draft response generated was wrong, the mail asked for job related documents from him, but the draft generated reasked for the documents from the sender.  
-    </output_example>
-    """
+<instruction>
+Update episodic memory in STRICT JSON format matching the schema.
+Summarize key conversational events, user corrections, and agent mistakes.
+Exclude greetings, chit-chat, or trivial details.
+</instruction>
+
+<schema>
+{
+  "last_summary": "string",
+  "important_events": ["string"],
+  "mistakes_to_avoid": ["string"],
+  "user_feedback": ["string"]
+}
+</schema>
+
+<input>
+previous_episodic_memory: {data}
+current_context: {context}
+</input>
+"""
 )
+
 
 CHATBOT_SYSTEM_INSTRUCTION = dedent(
     """
