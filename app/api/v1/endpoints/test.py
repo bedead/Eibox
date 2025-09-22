@@ -59,7 +59,12 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
     #     username=username, user_id=user_id, thread_id=thread_id, interval=30
     # )
 
-    session = init_or_get_session(username, thread_id, websocket, namespace_for_memory)
+    session = init_or_get_session(
+        username=username,
+        thread_id=thread_id,
+        websocket=websocket,
+        namespace_for_memory=namespace_for_memory,
+    )
 
     try:
         while True:

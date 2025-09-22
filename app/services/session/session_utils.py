@@ -15,8 +15,8 @@ from app.services.session.store_session import store_session
 def init_or_get_session(
     username: str,
     thread_id: str,
-    websocket: WebSocket,
     namespace_for_memory: Tuple[str, str],
+    websocket: Optional[WebSocket] = None,
 ):
     session: ChatSession = get_session(username=username, thread_id=thread_id)
     if session:
