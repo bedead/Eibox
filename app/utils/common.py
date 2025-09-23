@@ -154,19 +154,6 @@ def display_graph(
         compiled_graph.get_graph().draw_png()
 
 
-def clean_and_parse_ai_output(text: str):
-    # Step 1: Remove markdown-style code fences
-    cleaned = re.sub(r"```json|```", "", text).strip()
-
-    # Step 2: Parse the JSON
-    try:
-        parsed = json.loads(cleaned)
-        return parsed
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON parsing error: {e}", exc_info=True)
-        return None
-
-
 def deep_merge_dicts(original: dict, updates: dict) -> dict:
     """Recursively merge updates into original dict. Append to lists instead of overwriting."""
     for key, value in updates.items():

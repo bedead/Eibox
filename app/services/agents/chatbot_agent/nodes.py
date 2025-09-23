@@ -14,13 +14,13 @@ from app.services.agents.chatbot_agent.tools import all_tools
 from app.core.logging import logger
 from app.core.config import settings
 from app.services.agents.chatbot_agent.states import ChatbotState
-from app.utils._api_helper import _to_text
+from app.services.agents.chatbot_agent.utils import should_update_memory
+from app.utils._text_helper import _to_text, clean_and_parse_ai_output
 from app.utils._prompts import (
     CHATBOT_SYSTEM_INSTRUCTION,
     EPISODIC_MEMORY_PROMPT,
     SEMANTIC_MEMORY_PROMPT,
 )
-from app.utils.common import clean_and_parse_ai_output
 
 
 llm = init_chat_model(model="google_genai:gemini-2.0-flash", temperature=0.6)
@@ -31,10 +31,10 @@ namespace_for_memory = ("auth", "user")
 def context_update(
     state: ChatbotState, store: BaseStore, config: RunnableConfig
 ) -> Command:
-
-    # Get memory update counter from state
-    memory_update_counter: int = state.memory_update_counter
-    if memory_update_counter == 0:
+    """
+    Update semantic and episodic memory if needed based on heuristics.
+    """
+    if should_update_memory(last_messages=state.messages[-3:]):
         # Data extraction from config
         configurable: Dict[str, Any] | None = config.get("configurable")
         if configurable:
@@ -68,15 +68,18 @@ def context_update(
                 ).replace("{context}", str(state.messages) if state.messages else "")
             )
 
-            parsed_sem_mem = SemanticMemSchema.model_validate_json(
-                _to_text(updated_semantic_memory.content)
-            )
+            # Parse and validate semantic memory (strip code fences and ensure JSON)
+            sem_text = _to_text(updated_semantic_memory.content)
+            sem_parsed = clean_and_parse_ai_output(sem_text) or {}
+            parsed_sem_mem = SemanticMemSchema.model_validate(sem_parsed)
 
-            # store updated semantic memory
+            # Debug
+            logger.debug(f"Parsed Semantic Memory: {parsed_sem_mem.model_dump_json()}" )
+            # store updated semantic memory as dict
             store.put(
                 namespace=namespace_for_memory,
                 key=semantic_memory_key,
-                value=parsed_sem_mem.model_json_schema(),
+                value=parsed_sem_mem.model_dump(),
             )
 
             updated_episodic_memory = llm.invoke(
@@ -93,26 +96,23 @@ def context_update(
                 )
             )
 
-            parsed_epi_mem = EpisodicMemSchema.model_validate_json(
-                _to_text(updated_episodic_memory.content)
-            )
+            # Parse and validate episodic memory
+            epi_text = _to_text(updated_episodic_memory.content)
+            epi_parsed = clean_and_parse_ai_output(epi_text) or {}
+            parsed_epi_mem = EpisodicMemSchema.model_validate(epi_parsed)
 
-            # store updated episodic memory
+            # store updated episodic memory as dict
             store.put(
                 namespace=namespace_for_memory,
                 key=episodic_memory_key,
-                value=parsed_epi_mem.model_json_schema(),
+                value=parsed_epi_mem.model_dump(),
             )
 
             return Command(
                 update={
-                    "semantic_memory": (
-                        updated_semantic_memory if updated_semantic_memory else ""
-                    ),
-                    "episodic_memory": (
-                        updated_episodic_memory if updated_episodic_memory else ""
-                    ),
-                    "memory_update_counter": 3,
+                    # Persist JSON strings in state
+                    "semantic_memory": parsed_sem_mem.model_dump_json(),
+                    "episodic_memory": parsed_epi_mem.model_dump_json(),
                 }
             )
         else:
@@ -122,7 +122,7 @@ def context_update(
             )
             return Command()
 
-    return Command(update={"memory_update_counter": memory_update_counter - 1})
+    return Command()
 
 
 def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Command:

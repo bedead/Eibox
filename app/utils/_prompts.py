@@ -15,9 +15,9 @@ Exclude greetings, small talk, or trivial conversational noise.
 <schema>
 {
   "full_name": "string | null",
-  "emails": ["string"],
-  "works_at": "string | null",
-  "location": "string | null",
+  "users_emails": ["string"],
+  "works_at": ["string"],
+  "location": ["string"],
   "interests": ["string"],
   "skills": ["string"],
   "preferences": ["string"]
@@ -81,12 +81,12 @@ CHATBOT_SYSTEM_INSTRUCTION = dedent(
 
     <semantic_memory>
     Users profile/semantic memory is used to help you understand the user better and provide personalized responses.
-    {semantic_memory}
+    Semantic Memory: {semantic_memory}
     </semantic_memory>
 
     <episodic_memory>
     Episodic memory is used to help you remember how to accomplish a task.
-    {episodic_memory}
+    Episodic Memory: {episodic_memory}
     </episodic_memory>
 
     <mail_data>

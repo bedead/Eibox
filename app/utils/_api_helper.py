@@ -2,12 +2,12 @@ import hashlib
 from typing import Any, Dict, AsyncGenerator
 
 from apscheduler.job import Job
-from langchain_core.messages import AIMessageChunk
+from langchain_core.messages import AIMessageChunk, HumanMessage
 
 
 from app.core.logging import logger
-from app.services.agents.chatbot_agent import ChatAgent
-from app.services.agents.chatbot_agent.states import ChatbotState
+from app.services.agents.chatbot_agent import ChatAgent, ChatbotState
+from app.utils._text_helper import _to_text
 
 
 def job_to_dict(job: Job) -> Dict[str, Any]:
@@ -43,32 +43,11 @@ def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
 
-def _to_text(content: Any) -> str:
-    # Normalize content to string for consistent generator typing
-    if isinstance(content, list):
-        parts: list[str] = []
-        for part in content:
-            if isinstance(part, str):
-                parts.append(part)
-            elif isinstance(part, dict):
-                # common LangChain content dicts may have 'text'
-                text = part.get("text")
-                if isinstance(text, str):
-                    parts.append(text)
-                else:
-                    # best-effort fallback
-                    parts.append(str(part))
-            else:
-                parts.append(str(part))
-        return "".join(parts)
-    return content if isinstance(content, str) else str(content)
-
-
 async def call_graph(
     user_input: str, username: str, thread_id: str, streaming: bool = False
 ) -> AsyncGenerator[str, None]:
     state = ChatbotState(
-        messages=[{"role": "user", "content": user_input}],
+        messages=[HumanMessage(content=user_input)],
     )
 
     if streaming:

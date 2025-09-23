@@ -18,7 +18,7 @@ dev-requirements.txt
 thought_dump.txt
 .zencoder
 .pytest_cache
-
+pygount_report.txt
 # Ignore Python cache files
 __pycache__/
 *.pyc
