@@ -1,5 +1,6 @@
 .env
-.env.secret
+.env.dev
+.env.prod
 token.pickle
 web_creds.json
 emails.json

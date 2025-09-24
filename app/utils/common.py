@@ -10,7 +10,6 @@ This module provides:
 """
 
 import json
-import re
 import os
 from typing import Any, Dict, List, Literal, Union
 
@@ -27,7 +26,7 @@ from app.core.config import settings
 def get_gcp_client_id() -> str:
     """Returns GOOGLE CLOUD PROVIDERS web client Id."""
 
-    var: str | None = os.environ.get("GMAIL_WEB_CLIENT_ID")
+    var: str | None = settings.GMAIL_WEB_CLIENT_ID
     if var is None:
         logger.critical(f"Missing required environment variable: GMAIL_WEB_CLIENT_ID")
         raise RuntimeError("Missing required environment variable: GMAIL_WEB_CLIENT_ID")
@@ -36,7 +35,7 @@ def get_gcp_client_id() -> str:
 
 def get_gcp_client_secret() -> str:
     """Returns GOOGLE CLOUD PROVIDERS web client secret."""
-    var: str | None = os.environ.get("GMAIL_WEB_CLIENT_SECRET")
+    var: str | None = settings.GMAIL_WEB_CLIENT_SECRET
     if var is None:
         logger.critical(
             f"Missing required environment variable: GMAIL_WEB_CLIENT_SECRET"
@@ -47,34 +46,22 @@ def get_gcp_client_secret() -> str:
     return var
 
 
-def get_dev_server_url() -> str:
-    """Returns Development Server URL."""
-    var: str | None = os.environ.get("DEV_SERVER_URL")
+def get_api_server_url() -> str:
+    """Returns API Server URL."""
+    var: str | None = settings.API_SERVER_URL
     if var is None:
-        logger.critical(f"Missing required environment variable: DEV_SERVER_URL")
-        raise RuntimeError("Missing required environment variable: DEV_SERVER_URL")
-    return var
-
-
-def get_prod_server_url() -> str:
-    """Returns Production Server URL."""
-    var: str | None = os.environ.get("PROD_SERVER_URL")
-    if var is None:
-        logger.critical(f"Missing required environment variable: PROD_SERVER_URL")
-        raise RuntimeError("Missing required environment variable: PROD_SERVER_URL")
+        logger.critical(f"Missing required environment variable: API_SERVER_URL")
+        raise RuntimeError("Missing required environment variable: API_SERVER_URL")
     return var
 
 
 def get_gmail_redirect_uri() -> str:
     """Returns the Gmail OAUTH Redirect URI for Server based on Config env."""
-    # Get server type config url
-    if settings.API_DEV_SERVER:
-        server_url: str = get_dev_server_url()
-    else:
-        server_url: str = get_prod_server_url()
+    # Get the server URL based on the environment
+    api_server_url: str = get_api_server_url()
 
     # Get the default GMAIL_WEB_REDIRECT_URI Endpoint for redirect
-    gmail_web_redirect_uri: str | None = os.environ.get("GMAIL_WEB_REDIRECT_URI")
+    gmail_web_redirect_uri: str | None = settings.GMAIL_WEB_REDIRECT_URI
 
     # If GMAIL_WEB_REDIRECT_URI env variable not found raise and log error
     if gmail_web_redirect_uri == None:
@@ -86,12 +73,12 @@ def get_gmail_redirect_uri() -> str:
         )
 
     # Return the combined URL Endpoint
-    return f"{server_url}{gmail_web_redirect_uri}"
+    return f"{api_server_url}{gmail_web_redirect_uri}"
 
 
 def get_google_gemini_key() -> str | None:
     """Returns the Google Gemini API key from environment variables."""
-    var: str | None = os.environ.get("GOOGLE_GEMINI_API_KEY")
+    var: str | None = settings.GOOGLE_API_KEY
     if var is None:
         logger.critical(f"Missing required environment variable: GOOGLE_GEMINI_API_KEY")
         raise RuntimeError(
@@ -101,22 +88,9 @@ def get_google_gemini_key() -> str | None:
     return var
 
 
-def get_local_redis_store_host() -> str | None:
-    """Get the local redis store host endpoint with port."""
-    var: str | None = os.environ.get("LOCAL_REDIS_STORE_HOST")
-    if var is None:
-        logger.critical(
-            f"Missing required environment variable: LOCAL_REDIS_STORE_HOST"
-        )
-        raise RuntimeError(
-            "Missing required environment variable: LOCAL_REDIS_STORE_HOST"
-        )
-    return var
-
-
 def get_cloud_redis_store_host() -> str | None:
     """Get the cloud redis store host endpoint with port."""
-    var: str | None = os.environ.get("CLOUD_REDIS_STORE_HOST")
+    var: str | None = settings.CLOUD_REDIS_STORE_HOST
     if var is None:
         logger.critical(
             f"Missing required environment variable: CLOUD_REDIS_STORE_HOST"
@@ -129,7 +103,7 @@ def get_cloud_redis_store_host() -> str | None:
 
 def get_groq_key():
     """Get the Groq API key from environment variables."""
-    var: str | None = os.environ.get("GROQ_API_KEY")
+    var: str | None = settings.GROQ_API_KEY
     if var is None:
         logger.critical(f"Missing required environment variable: GROQ_API_KEY")
         raise RuntimeError("Missing required environment variable: GROQ_API_KEY")

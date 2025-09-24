@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import os
 from typing import List, Dict, Any, cast
 
 from langchain_core.messages import SystemMessage
@@ -22,6 +23,7 @@ from app.utils._prompts import (
     SEMANTIC_MEMORY_PROMPT,
 )
 
+os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY
 
 llm = init_chat_model(model="google_genai:gemini-2.0-flash", temperature=0.6)
 model_with_tools = llm.bind_tools(all_tools)

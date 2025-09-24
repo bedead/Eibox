@@ -1,12 +1,23 @@
 # Standard Library
+import os
 
-# Third Party Packages
+# Project Packages
+from app.core.config import settings
+
+
+# ✅ Must happen before LangChain/LangSmith is imported anywhere
+if settings.LANGSMITH_TRACING:
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"  # new SDK flag
+    os.environ["LANGSMITH_TRACING"] = "true"  # legacy flag
+    os.environ["LANGSMITH_ENDPOINT"] = settings.LANGSMITH_ENDPOINT
+    os.environ["LANGSMITH_API_KEY"] = settings.LANGSMITH_API_KEY
+    os.environ["LANGSMITH_PROJECT"] = settings.LANGSMITH_PROJECT
+
+# --- only after this, import FastAPI and other deps ---
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# Project Packages
 from app.core.middleware import add_middleware
-from app.core.config import settings
 from app.api.v1.routers import (
     cron_router,
     auth_router,
@@ -14,6 +25,7 @@ from app.api.v1.routers import (
     websocket_router,
     test_router,
 )
+
 
 # Initialize FastAPI app
 app = FastAPI(

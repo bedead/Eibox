@@ -17,10 +17,10 @@ def should_update_memory(
     # logger.debug(f"Evaluating memory update for messages: {last_messages}")
 
     # Extract role + text
-    roles = [
-        getattr(msg, "type", None) for msg in last_messages
-    ]  # "human" | "ai" | "system"
-    print(f"Roles in last messages: {roles}")
+    # roles = [
+    #     getattr(msg, "type", None) for msg in last_messages
+    # ]  # "human" | "ai" | "system"
+    # print(f"Roles in last messages: {roles}")
     contents = [_to_text(msg.content) for msg in last_messages]
 
     # 1. Token length heuristic
