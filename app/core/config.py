@@ -3,7 +3,7 @@ import os
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ENV_STATE = os.getenv("API_SERVER_URL", "dev")  # default "dev"
+ENV_STATE = os.getenv("API_ENVIRONMENT_TYPE", "dev")  # default "dev"
 # Get the project root directory
 env_file = f".env.{ENV_STATE}"
 
@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     APP_SUMMARY: str = (
         "AI-powered email assistant that reads, categorizes, prioritizes, and responds to emails automatically, helping users manage their inbox efficiently."
     )
-    APP_VERSION: str = "0.2.2"
+    APP_VERSION: str = "0.2.3"
 
     # =============================
     # API Details

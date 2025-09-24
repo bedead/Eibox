@@ -57,6 +57,13 @@ pip install -r requirements.txt
 pip install -r dev-requirements.txt
 ```
 
+```bash
+set API_ENVIRONMENT_TYPE=dev
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# or
+fastapi run main:app
+```
+
 ## API Structure
 
 **Framework**: FastAPI

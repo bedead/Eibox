@@ -76,7 +76,7 @@ def context_update(
             parsed_sem_mem = SemanticMemSchema.model_validate(sem_parsed)
 
             # Debug
-            logger.debug(f"Parsed Semantic Memory: {parsed_sem_mem.model_dump_json()}" )
+            logger.debug(f"Parsed Semantic Memory: {parsed_sem_mem.model_dump_json()}")
             # store updated semantic memory as dict
             store.put(
                 namespace=namespace_for_memory,
@@ -102,6 +102,8 @@ def context_update(
             epi_text = _to_text(updated_episodic_memory.content)
             epi_parsed = clean_and_parse_ai_output(epi_text) or {}
             parsed_epi_mem = EpisodicMemSchema.model_validate(epi_parsed)
+
+            logger.debug(f"Parsed Episodic Memory: {parsed_epi_mem.model_dump_json()}")
 
             # store updated episodic memory as dict
             store.put(
