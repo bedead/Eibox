@@ -76,24 +76,17 @@ class GmailToolKit:
             self.logger.error(
                 f"Error authenticating with Gmail API: {str(e)}", exc_info=True
             )
-            raise RuntimeError(f"Failed to authenticate with Gmail API: {str(e)}")
+            raise RuntimeError("Your Gmail session expired. Please re-connect.")
 
     def _maybe_persist_tokens(self):
         """Update refresh tokens if refresh successful."""
         if self.creds:
-            new_refresh = getattr(self.creds, "refresh_token", None)
             new_access = getattr(self.creds, "token", None)
 
             tokens_changed = False
             if new_access and (self.gmail_account.access_token != new_access):
                 self.gmail_account.access_token = cast(str, new_access)
                 self.logger.debug("Access token has been refreshed.")
-                tokens_changed = True
-
-            # Only update refresh_token if the provider returned a non-empty value
-            if new_refresh and (self.gmail_account.refresh_token != new_refresh):
-                self.gmail_account.refresh_token = cast(str, new_refresh)
-                self.logger.debug("Refresh token has been refreshed.")
                 tokens_changed = True
 
             if tokens_changed:
@@ -118,9 +111,7 @@ class GmailToolKit:
                     new_account=self.gmail_account,
                     namespace_for_memory=("auth", "user"),
                 )
-                self.logger.debug(
-                    f"Updated tokens for {self.gmail_account.email}."
-                )
+                self.logger.debug(f"Updated tokens for {self.gmail_account.email}.")
 
     def mark_email_as_read(self, message_id):
         """Marks an email as read by removing the UNREAD label."""

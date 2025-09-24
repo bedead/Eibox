@@ -57,4 +57,4 @@ def login_user(
 
     # If user exists and password matches, return success
     logger.debug(f"User {user.username} logged in successfully")
-    return {"success": 200, "message": "User logged in successfully", "data": data}
+    return {"success": 200, "message": "User logged in successfully", "data": parsed_data}

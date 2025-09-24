@@ -36,8 +36,7 @@ class Settings(BaseSettings):
     GMAIL_WEB_REDIRECT_URI: str = "http://localhost/oauth2callback"
 
     GOOGLE_GMAIL_SCOPE: List[str] = [
-        "https://www.googleapis.com/auth/gmail.readonly",
-        "https://www.googleapis.com/auth/gmail.modify",
+        "https://mail.google.com/",
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile",
         "openid",

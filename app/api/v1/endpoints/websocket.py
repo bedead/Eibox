@@ -43,8 +43,9 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
     # Run email fetch scheduler job if enabled fron configs
     job = None  # Empty job to avoid reference before assignment error
     if settings.RUN_JOB_SCHEDULER:
+        logger.debug("Starting auto email fetch scheduler job...")
         job = start_email_scheduler_job(
-            username=username, thread_id=thread_id, interval=30
+            username=username, thread_id=thread_id, interval=1800
         )
 
     session = init_or_get_session(
