@@ -102,3 +102,13 @@ async def call_graph(
                             yield response
 
         return _stream_messages()
+
+
+def second_to_minutes(seconds: int) -> float:
+    """Convert seconds to minutes rounded to int"""
+    return round(seconds / 60)
+
+
+def minutes_to_seconds(minutes: int) -> int:
+    """Convert minutes to seconds"""
+    return minutes * 60
