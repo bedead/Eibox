@@ -2,7 +2,7 @@
 
 ## Summary
 
-Eibox is an intelligent system designed to completely handle emails. This assistant leverages AI to read, categorize, prioritize, and respond to emails, ensuring efficient email management. The goal is to reduce email overload and help users focus on important messages while automating routine tasks. The project is currently under development.
+Eibox (formerly ama.ai) is an intelligent system designed to completely handle emails. This assistant leverages AI to read, categorize, prioritize, and respond to emails, ensuring efficient email management. The goal is to reduce email overload and help users focus on important messages while automating routine tasks. The project is currently under development.
 
 ## Structure
 
