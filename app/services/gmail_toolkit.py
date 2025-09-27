@@ -2,13 +2,13 @@ import time
 import base64
 import threading
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
 from app.core.logging import logger
-from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
+from app.db.repos.gmail.accounts import add_gmail_account
 from app.schemas.gmail_account import GmailAccount
 from app.utils.common import get_gcp_client_id, get_gcp_client_secret
 from app.core.config import settings
@@ -76,24 +76,17 @@ class GmailToolKit:
             self.logger.error(
                 f"Error authenticating with Gmail API: {str(e)}", exc_info=True
             )
-            raise RuntimeError(f"Failed to authenticate with Gmail API: {str(e)}")
+            raise RuntimeError("Your Gmail session expired. Please re-connect.")
 
     def _maybe_persist_tokens(self):
         """Update refresh tokens if refresh successful."""
         if self.creds:
-            new_refresh = getattr(self.creds, "refresh_token", None)
             new_access = getattr(self.creds, "token", None)
 
             tokens_changed = False
             if new_access and (self.gmail_account.access_token != new_access):
                 self.gmail_account.access_token = cast(str, new_access)
                 self.logger.debug("Access token has been refreshed.")
-                tokens_changed = True
-
-            # Only update refresh_token if the provider returned a non-empty value
-            if new_refresh and (self.gmail_account.refresh_token != new_refresh):
-                self.gmail_account.refresh_token = cast(str, new_refresh)
-                self.logger.debug("Refresh token has been refreshed.")
                 tokens_changed = True
 
             if tokens_changed:
@@ -118,9 +111,7 @@ class GmailToolKit:
                     new_account=self.gmail_account,
                     namespace_for_memory=("auth", "user"),
                 )
-                self.logger.debug(
-                    f"Updated tokens for {self.gmail_account.email}."
-                )
+                self.logger.debug(f"Updated tokens for {self.gmail_account.email}.")
 
     def mark_email_as_read(self, message_id):
         """Marks an email as read by removing the UNREAD label."""
@@ -214,7 +205,7 @@ class GmailToolKit:
         extra_filters: Optional[List[str]] = None,  # ["has:drive", "is:snoozed"]
         max_results: int = 10,
         page_token: Optional[str] = None,
-    ) -> List[dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Fetch emails from Gmail with maximum search granularity.
         """
@@ -326,7 +317,7 @@ class GmailToolKit:
                     f"Error in background monitoring: {str(e)}", exc_info=True
                 )
 
-    def start(self):
+    def start(self) -> Union[List[Dict[str, Any]], List[None], None]:
         """Start monitoring emails either in background thread or directly."""
         if self.monitoring_active:
             self.logger.debug("Monitoring is already active.")

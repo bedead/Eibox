@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     APP_SUMMARY: str = (
         "AI-powered email assistant that reads, categorizes, prioritizes, and responds to emails automatically, helping users manage their inbox efficiently."
     )
-    APP_VERSION: str = "0.2.3"
+    APP_VERSION: str = "0.2.4"
 
     # =============================
     # API Details
@@ -36,8 +36,7 @@ class Settings(BaseSettings):
     GMAIL_WEB_REDIRECT_URI: str = "http://localhost/oauth2callback"
 
     GOOGLE_GMAIL_SCOPE: List[str] = [
-        "https://www.googleapis.com/auth/gmail.readonly",
-        "https://www.googleapis.com/auth/gmail.modify",
+        "https://mail.google.com/",
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile",
         "openid",
@@ -75,7 +74,7 @@ class Settings(BaseSettings):
     # =============================
     SCHEDULER_API_ENABLED: bool = False
     LOG_TYPE: str = "debug"
-    RUN_JOB_SCHEDULER: bool = False
+    RUN_JOB_SCHEDULER: bool = True  # Set to False for dev server
     LOG_FOLDER_NAME: str = "log_dump"
 
     model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
@@ -84,12 +83,12 @@ class Settings(BaseSettings):
         """
         Post-init adjustments based on environment.
         """
-        if self.API_DEV_SERVER:
-            self.LOG_TYPE = "debug"
-            self.RUN_JOB_SCHEDULER = False
-        else:
-            self.LOG_TYPE = "info"
-            self.RUN_JOB_SCHEDULER = True
+        # if self.API_DEV_SERVER:
+        #     self.LOG_TYPE = "debug"
+        #     self.RUN_JOB_SCHEDULER = False
+        # else:
+        #     self.LOG_TYPE = "info"
+        #     self.RUN_JOB_SCHEDULER = True
 
         # Compose redis host if not already set
         if not self.CLOUD_REDIS_STORE_HOST and self.CLOUD_REDIS_STORE_HOST_URL:

@@ -11,12 +11,13 @@ Author: Satyam Mishra
 Date: 14-09-2025
 """
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, WebSocket
 
 from app.core.config import settings
 from app.core.logging import logger
+from app.db.repos.auth.get_user_data import get_user_data
 from app.schemas.chat_session import ChatSession
 from app.services.jobs import start_email_scheduler_job
 from app.services.session.delete_session import delete_session
@@ -25,7 +26,7 @@ from app.services.session.session_utils import (
     close_websocket_session,
     init_or_get_session,
 )
-from app.utils._api_helper import call_graph
+from app.utils._api_helper import call_graph, minutes_to_seconds
 
 router = APIRouter()
 
@@ -40,11 +41,29 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
     await websocket.accept()
     logger.debug(f"Websocket connection of user - {username} is opened.")
 
-    # Run email fetch scheduler job if enabled fron configs
+    user_data: Dict[str, Any] = get_user_data(username, namespace_for_memory)
+    # Ensure correct parsing of auto_email_monitoring as boolean
+    app_settings: Dict[str, Any] = user_data.get("app_settings", {})
+    auto_email_monitoring: bool = app_settings.get("auto_email_monitoring", False)
+    email_monitoring_frequency: int = app_settings.get(
+        "email_monitoring_frequency", 30
+    )  # in minutes
+    email_monitoring_frequency_seconds: int = minutes_to_seconds(
+        email_monitoring_frequency
+    )  # in seconds
+    logger.debug(f"Auto Email Monitoring Enabled: {auto_email_monitoring}")
+    logger.debug(
+        f"Auto Email Fetch Frequency in seconds: {email_monitoring_frequency_seconds}"
+    )
+
+    # Run email fetch scheduler job if enabled fron configs and user settings has auto_email_monitoring enabled
     job = None  # Empty job to avoid reference before assignment error
-    if settings.RUN_JOB_SCHEDULER:
+    if settings.RUN_JOB_SCHEDULER and auto_email_monitoring:
+        logger.debug("Starting auto email fetch scheduler job...")
         job = start_email_scheduler_job(
-            username=username, thread_id=thread_id, interval=30
+            username=username,
+            thread_id=thread_id,
+            interval=email_monitoring_frequency_seconds,
         )
 
     session = init_or_get_session(
@@ -52,6 +71,8 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
         thread_id=thread_id,
         websocket=websocket,
         namespace_for_memory=namespace_for_memory,
+        session_job=job,
+        extra_data=user_data,
     )
 
     try:

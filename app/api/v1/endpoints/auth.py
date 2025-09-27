@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 load_dotenv()
 
+from app.core.logging import logger
 from app.schemas.user_model import UserModel
 from app.schemas.login import LoginSchema
 from app.db.repos.auth.register_user import register_user as ru
@@ -77,6 +78,7 @@ def login_user(user: LoginSchema) -> Dict[str, Any]:
 # Model class for updating user data
 class UpdateUserDataRequest(BaseModel):
     """Payload schema to update user data from user."""
+
     username: str
     full_name: Optional[str] = None
     auto_email_monitoring: Optional[bool] = None
@@ -89,7 +91,7 @@ class UpdateUserDataRequest(BaseModel):
 def update_user_data(payload: UpdateUserDataRequest):
     # Build app_settings dict only with non-None values
     app_settings: Dict[str, Any] = {}
-    print(f"Payload received: {payload}")
+    logger.debug(f"Payload received: {payload}")
 
     if payload.auto_email_monitoring is not None:
         app_settings["auto_email_monitoring"] = payload.auto_email_monitoring

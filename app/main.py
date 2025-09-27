@@ -6,6 +6,7 @@ from app.core.config import settings
 
 
 # ✅ Must happen before LangChain/LangSmith is imported anywhere
+os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY
 if settings.LANGSMITH_TRACING:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"  # new SDK flag
     os.environ["LANGSMITH_TRACING"] = "true"  # legacy flag

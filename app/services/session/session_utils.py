@@ -1,9 +1,11 @@
-from typing import Optional, List, Tuple, Union
+from typing import Any, Dict, Optional, List, Tuple, Union
 
+from click import Option
 from fastapi import HTTPException, WebSocket
+from apscheduler.job import Job
 
 from app.core.logging import logger
-from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
+from app.db.repos.gmail.accounts import get_gmail_account
 from app.schemas.chat_session import ChatSession
 from app.schemas.gmail_account import GmailAccount
 from app.services.gmail_toolkit import GmailToolKit
@@ -17,6 +19,8 @@ def init_or_get_session(
     thread_id: str,
     namespace_for_memory: Tuple[str, str],
     websocket: Optional[WebSocket] = None,
+    session_job: Optional[Job] = None,
+    extra_data: Optional[Dict[str, Any]] = None,
 ):
     session: ChatSession = get_session(username=username, thread_id=thread_id)
     if session:
@@ -41,6 +45,8 @@ def init_or_get_session(
         thread_id=thread_id,
         gmail_toolkit=gmail_toolkit,
         websocket=websocket,
+        session_job=session_job,
+        extra_data=extra_data,
     )
 
 

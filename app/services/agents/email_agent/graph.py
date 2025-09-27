@@ -13,7 +13,6 @@ from app.services.agents.email_agent.routes import (
     is_response_needed_router,
 )
 from app.services.agents.email_agent.states import EmailState
-from app.db.redis import db_store
 
 
 def create_sequence_graph() -> StateGraph:
@@ -52,6 +51,7 @@ def create_sequence_graph() -> StateGraph:
         path_map={
             "get_gmail_toolkit_node": "get_gmail_toolkit_node",
             "analyze_mail_importance_node": "analyze_mail_importance_node",
+            END: END,
         },
     )
     sequence_graph.add_conditional_edges(
@@ -77,5 +77,5 @@ def create_sequence_graph() -> StateGraph:
     return sequence_graph
 
 
-graph = create_sequence_graph().compile(store=db_store)
+graph = create_sequence_graph().compile()
 # print(graph.get_graph().draw_mermaid())

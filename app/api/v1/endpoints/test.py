@@ -9,12 +9,15 @@ Author: Satyam Mishra
 Date: 14-09-2025
 """
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, WebSocket
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
+from app.core.config import settings
+from app.db.repos.auth.get_user_data import get_user_data
+from app.services.jobs import start_email_scheduler_job
 from app.services.session.session_utils import (
     close_websocket_session,
     init_or_get_session,
@@ -23,7 +26,7 @@ from app.services.session.session_utils import (
 load_dotenv()
 
 from app.core.logging import logger
-from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
+from app.db.repos.gmail.accounts import get_gmail_account
 from app.schemas.chat_session import ChatSession
 from app.services.session.get_session import get_session
 from app.services.session.delete_session import delete_session
@@ -55,15 +58,27 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
 
     await websocket.accept()
     logger.debug(f"Websocket connection of user - {username} is opened.")
-    # job = start_email_scheduler_job(
-    #     username=username, user_id=user_id, thread_id=thread_id, interval=30
-    # )
+
+    user_data: Dict[str, Any] = get_user_data(username, namespace_for_memory)
+    auto_email_monitoring: bool = user_data.get("app_settings", {}).get(
+        "auto_email_monitoring", False
+    )
+
+    # Run email fetch scheduler job if enabled fron configs
+    job = None  # Empty job to avoid reference before assignment error
+    if settings.RUN_JOB_SCHEDULER and auto_email_monitoring:
+        logger.debug("Starting auto email fetch scheduler job...")
+        job = start_email_scheduler_job(
+            username=username, thread_id=thread_id, interval=1800
+        )
 
     session = init_or_get_session(
         username=username,
         thread_id=thread_id,
         websocket=websocket,
         namespace_for_memory=namespace_for_memory,
+        session_job=job,
+        extra_data=user_data,
     )
 
     try:

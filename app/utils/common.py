@@ -149,7 +149,8 @@ def deep_merge_dicts(original: dict, updates: dict) -> dict:
 
 
 def safe_json_parse(
-    data: Union[str, Dict[str, Any], List[Any]], get: Literal["dict", "list"] = "dict"
+    data: Union[str, Dict[str, Any], List[Any]],
+    get: Literal["dict", "list"] = "dict",
 ) -> Union[Dict[str, Any], List[Any], Any]:
     """
     Universal JSON parser that safely converts strings to Python objects (dict, list, etc.).

@@ -11,6 +11,6 @@ def get_session(username: str, thread_id: str) -> ChatSession:
             logger.debug(f"Existing session found for username {username} ")
             return session
     except Exception as e:
-        logger.error(
+        logger.warning(
             f"{e} error occured while reading session for username {username}."
         )
