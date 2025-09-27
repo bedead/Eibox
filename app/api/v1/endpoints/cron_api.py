@@ -14,7 +14,7 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
+from app.db.repos.gmail.accounts import get_gmail_account
 from app.schemas.gmail_account import GmailAccount
 from app.services.gmail_toolkit import GmailToolKit
 from app.services.session.delete_session import delete_session

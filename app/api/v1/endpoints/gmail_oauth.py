@@ -20,7 +20,7 @@ from google.auth.credentials import Credentials
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
+from app.db.repos.gmail.accounts import add_gmail_account
 from app.db.repos.auth.update_user_data import update_user_data as uud
 from app.schemas.gmail_account import GmailAccount
 from app.core.config import settings

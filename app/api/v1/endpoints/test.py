@@ -26,7 +26,7 @@ from app.services.session.session_utils import (
 load_dotenv()
 
 from app.core.logging import logger
-from app.db.repos.gmail.get_gmail_accounts import get_gmail_account
+from app.db.repos.gmail.accounts import get_gmail_account
 from app.schemas.chat_session import ChatSession
 from app.services.session.get_session import get_session
 from app.services.session.delete_session import delete_session

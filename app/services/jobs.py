@@ -8,6 +8,8 @@ from apscheduler.job import Job
 
 def fetch_email_data(username: str, thread_id: str, config: RunnableConfig):
     logger.debug(f"[{datetime.now()}] Running email agent job...")
+    if "configurable" not in config:
+        config["configurable"] = {}
     config["configurable"]["username"] = username
     config["configurable"]["thread_id"] = thread_id
     result = EmailAgent.invoke(input=EmailState(), config=config)

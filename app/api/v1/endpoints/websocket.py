@@ -26,7 +26,7 @@ from app.services.session.session_utils import (
     close_websocket_session,
     init_or_get_session,
 )
-from app.utils._api_helper import call_graph, minutes_to_seconds, second_to_minutes
+from app.utils._api_helper import call_graph, minutes_to_seconds
 
 router = APIRouter()
 

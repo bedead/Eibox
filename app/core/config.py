@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     APP_SUMMARY: str = (
         "AI-powered email assistant that reads, categorizes, prioritizes, and responds to emails automatically, helping users manage their inbox efficiently."
     )
-    APP_VERSION: str = "0.2.3"
+    APP_VERSION: str = "0.2.4"
 
     # =============================
     # API Details

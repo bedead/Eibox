@@ -2,13 +2,13 @@ import time
 import base64
 import threading
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, Union, cast
 
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
 from app.core.logging import logger
-from app.db.repos.gmail.add_gmail_accounts import add_gmail_account
+from app.db.repos.gmail.accounts import add_gmail_account
 from app.schemas.gmail_account import GmailAccount
 from app.utils.common import get_gcp_client_id, get_gcp_client_secret
 from app.core.config import settings
@@ -205,7 +205,7 @@ class GmailToolKit:
         extra_filters: Optional[List[str]] = None,  # ["has:drive", "is:snoozed"]
         max_results: int = 10,
         page_token: Optional[str] = None,
-    ) -> List[dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Fetch emails from Gmail with maximum search granularity.
         """
@@ -317,7 +317,7 @@ class GmailToolKit:
                     f"Error in background monitoring: {str(e)}", exc_info=True
                 )
 
-    def start(self):
+    def start(self) -> Union[List[Dict[str, Any]], List[None], None]:
         """Start monitoring emails either in background thread or directly."""
         if self.monitoring_active:
             self.logger.debug("Monitoring is already active.")
