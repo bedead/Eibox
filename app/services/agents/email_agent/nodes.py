@@ -54,31 +54,14 @@ def get_gmail_toolkit(state: EmailState, config: RunnableConfig) -> Command:
                     max_results=1,
                     is_read=False,
                 )
-                logger.debug(f"Email data: {data}")
-                if len(data) > 0:
-                    mail_data = MailDataSchema(
-                        mail_id=data[0]["id"],
-                        subject=data[0]["subject"],
-                        sender_email_address=data[0]["sender"],
-                        date_time_received=data[0]["date"],
-                        body=data[0]["body"],
-                        unread=data[0]["unread"],
-                        snippet=data[0]["snippet"],
+                if len(data) > 0 and "id" in data[0]:
+                    logger.debug(f"Email data subject: {data[0]['subject']}")
+                    return Command(
+                        update={
+                            "email": data[0],
+                            "current_mail_id": data[0]["id"],
+                        }
                     )
-                    result = add_mail_to_object(
-                        username=username,
-                        individual_mail_data=mail_data,
-                        namespace_for_memory=namespace_for_memory,
-                    )
-                    if result and result["status"] == "success":
-                        logger.debug(result["message"])
-
-                        return Command(
-                            update={
-                                "email": data[0],
-                                "current_mail_id": data[0]["id"],
-                            }
-                        )
 
     return Command()
 
@@ -102,12 +85,29 @@ async def analyze_importance(state: EmailState, config: RunnableConfig) -> Comma
             username: str = configurable.get("username", "satyam")
             thread_id: str = configurable.get("thread_id", "test_thread")
             if username and thread_id:
-                logger.debug(f"Sending proactive message to {username}.")
-                await push_proactive_message(
-                    username,
-                    thread_id,
-                    f"📧 New important email from {email_data['sender']} with subject '{email_data['subject']}'",
+                mail_data = MailDataSchema(
+                    mail_id=email_data["id"],
+                    subject=email_data["subject"],
+                    sender_email_address=email_data["sender"],
+                    date_time_received=email_data["date"],
+                    body=email_data["body"],
+                    unread=email_data["unread"],
+                    snippet=email_data["snippet"],
                 )
+                result = add_mail_to_object(
+                    username=username,
+                    individual_mail_data=mail_data,
+                    namespace_for_memory=namespace_for_memory,
+                )
+                if result and result["status"] == "success":
+                    logger.debug(result["message"])
+
+                    logger.debug(f"Sending proactive message to {username}.")
+                    await push_proactive_message(
+                        username,
+                        thread_id,
+                        f"📧 New important email from {email_data['sender']} with subject '{email_data['subject']}'",
+                    )
     return Command(
         update={
             "is_mail_important": important_response == "yes",

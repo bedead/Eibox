@@ -9,8 +9,10 @@ from langgraph.store.base import BaseStore, Item
 from langchain_core.runnables import RunnableConfig
 from langchain.chat_models import init_chat_model
 
+from app.db.repos.gmail.mails.get_mail_object import get_mail_object
 from app.schemas.episodic_mem import EpisodicMemSchema
 from app.schemas.semantic_mem import SemanticMemSchema
+from app.schemas.unread_mails import MailDataSchema, UnreadMailsSchema
 from app.services.agents.chatbot_agent.tools import all_tools
 from app.core.logging import logger
 from app.core.config import settings
@@ -132,7 +134,7 @@ def context_update(
 def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Command:
 
     # If job scheduler is running, get the mail data pre-fetched by background task and stored in redis store
-    unread_mail_data_list: list = []
+    mails_data: list = []
     unread_mails_count: int = 0
     if settings.RUN_JOB_SCHEDULER:
         # get username and thread_id from chat config
@@ -140,37 +142,14 @@ def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Co
 
         if configurable:
             username = configurable.get("username")
-            thread_id = configurable.get("thread_id")
 
-            # create unqiue key to get the data
-            data_key = f"user-data:{username}:{thread_id}"
-            unread_key = f"user-unread_mails:{username}:{thread_id}"
-
-            # get data from store
-            mail_data_item: Item | None = store.get(
-                namespace=namespace_for_memory, key=data_key
-            )
-            unread_mails_item: Item | None = store.get(
-                namespace=namespace_for_memory, key=unread_key
-            )
-
-            # Extract values or set defaults
-            if mail_data_item and unread_mails_item:
-                mail_data_list: List[Dict[str, Any]] = cast(
-                    List[Dict[str, Any]], mail_data_item.value
+            if username:
+                mail_obj: UnreadMailsSchema | None = get_mail_object(
+                    username, namespace_for_memory
                 )
-                unread_mails_count: int = cast(int, unread_mails_item.value)
-
-                for i in mail_data_list:
-                    if i.get("unread"):
-                        # print(f"Skipping read mail: {i.get('unread')}")
-                        unread_mail_data_list.append(i)
-                logger.debug(f"Unread mail data list: {unread_mail_data_list}")
-                logger.debug(f"Unread mails: {unread_mails_count}")
-            else:
-                logger.info(
-                    f"No Unread Mail data found, because background process not running for user: {username}."
-                )
+                if mail_obj and mail_obj.unread_mails_count > 0:
+                    mails_data = mail_obj.mails_data
+                    unread_mails_count = mail_obj.unread_mails_count
         else:
             logger.warning(
                 f"Chat Agent Graph doesn't seems to have RunnableConfig, check Websocket api module for errors.",
@@ -188,15 +167,14 @@ def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Co
             else 0
         ),
         mail_data_list=(
-            unread_mail_data_list
-            if (settings.RUN_JOB_SCHEDULER and unread_mail_data_list)
-            else []
+            mails_data if (settings.RUN_JOB_SCHEDULER and mails_data) else []
         ),
         semantic_memory=semantic_memory if semantic_memory else "",
         episodic_memory=episodic_memory if episodic_memory else "",
         CURRENT_DATE=datetime.now().strftime("%Y-%m-%d"),
         CURRENT_TIME=datetime.now().strftime("%H:%M %p"),
         TIMEZONE=datetime.now().astimezone().tzname(),
+        BACKGROUND_EMAIL_AGENT_RUNNING=settings.RUN_JOB_SCHEDULER,
     )
 
     messages = [

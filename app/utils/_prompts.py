@@ -60,6 +60,7 @@ current_context: {context}
 CHATBOT_SYSTEM_INSTRUCTION = dedent(
     """
     <instructions>
+    Background Email Agent Running: {BACKGROUND_EMAIL_AGENT_RUNNING}
     Todays date: {CURRENT_DATE}
     Current time: {CURRENT_TIME}
     Timezone: {TIMEZONE}
@@ -90,7 +91,7 @@ CHATBOT_SYSTEM_INSTRUCTION = dedent(
     </episodic_memory>
 
     <mail_data>
-    This email data has been received via a background task — the user is not yet aware of it.
+    This email data has been received via a background task — the user could be aware of it by automatic proactive msg from system to user, or could be unaware of it.
 
     unread_mails_count: {unread_mails_count}
     all_mails_data: {mail_data_list}
