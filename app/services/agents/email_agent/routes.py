@@ -12,7 +12,7 @@ def email_importance_router(
     return (
         "is_response_needed_node"
         if state["is_mail_important"]
-        else "get_gmail_toolkit_node"
+        else END
     )
 
 
@@ -22,5 +22,5 @@ def is_response_needed_router(
     return (
         "mail_response_format_node"
         if state["is_response_needed"]
-        else "get_gmail_toolkit_node"
+        else END
     )

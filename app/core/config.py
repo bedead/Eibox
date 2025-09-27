@@ -9,6 +9,8 @@ env_file = f".env.{ENV_STATE}"
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
+
     # =============================
     # App Details
     # =============================
@@ -77,7 +79,6 @@ class Settings(BaseSettings):
     RUN_JOB_SCHEDULER: bool = True  # Set to False for dev server
     LOG_FOLDER_NAME: str = "log_dump"
 
-    model_config = SettingsConfigDict(env_file=env_file, extra="ignore")
 
     def configure_runtime(self) -> None:
         """

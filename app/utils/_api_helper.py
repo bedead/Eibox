@@ -1,12 +1,15 @@
 import hashlib
-from typing import Any, Dict, AsyncGenerator
+from typing import Any, Dict, AsyncGenerator, Optional
 
 from apscheduler.job import Job
+from fastapi import WebSocket
 from langchain_core.messages import AIMessageChunk, HumanMessage
 
 
 from app.core.logging import logger
+from app.schemas.chat_session import ChatSession
 from app.services.agents.chatbot_agent import ChatAgent, ChatbotState
+from app.services.session.get_session import get_session
 from app.utils._text_helper import _to_text
 
 
@@ -102,6 +105,18 @@ async def call_graph(
                             yield response
 
         return _stream_messages()
+
+
+async def push_proactive_message(username: str, thread_id: str, message: str):
+    session: Optional[ChatSession] | None = get_session(
+        username, thread_id
+    )
+    if session and session.websocket:
+        ws: WebSocket = session.websocket
+        try:
+            await ws.send_text(message)
+        except Exception as e:
+            logger.error(f"Failed to send proactive message: {e}", exc_info=True)
 
 
 def second_to_minutes(seconds: int) -> float:

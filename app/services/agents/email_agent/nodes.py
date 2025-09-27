@@ -1,14 +1,15 @@
+import asyncio
 from datetime import datetime
 from typing import Any, Dict
 
 
 from langgraph.types import Command
-from langgraph.graph import END
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
 
-
+from app.core.logging import logger
+from app.utils._api_helper import push_proactive_message
 from app.utils._text_helper import _to_text
 from app.core.logging import logger
 from app.db.repos.gmail.mails.add_draft_to_mail_object import add_draft_to_mail_object
@@ -42,46 +43,47 @@ def get_gmail_toolkit(state: EmailState, config: RunnableConfig) -> Command:
 
         # get session data
         session = get_session(username=username, thread_id=thread_id)
-        gmail_toolkit: GmailToolKit | None = session.gmail_toolkit
-        if gmail_toolkit:
-            today = datetime.today().strftime("%d/%m/%Y")
-            # logger.debug(f"Today's date: {today}")
-            data = gmail_toolkit.check_emails(
-                from_date=today,
-                to_date=today,
-                max_results=1,
-                is_read=False,
-            )
-            logger.debug(f"Email data: {data}")
-            if len(data) > 0:
-                mail_data = MailDataSchema(
-                    mail_id=data[0]["id"],
-                    subject=data[0]["subject"],
-                    sender_email_address=data[0]["sender"],
-                    date_time_received=data[0]["date"],
-                    body=data[0]["body"],
-                    unread=data[0]["unread"],
-                    snippet=data[0]["snippet"],
+        if session:
+            gmail_toolkit: GmailToolKit | None = session.gmail_toolkit
+            if gmail_toolkit:
+                today = datetime.today().strftime("%d/%m/%Y")
+                # logger.debug(f"Today's date: {today}")
+                data = gmail_toolkit.check_emails(
+                    from_date=today,
+                    to_date=today,
+                    max_results=1,
+                    is_read=False,
                 )
-                result = add_mail_to_object(
-                    username=username,
-                    individual_mail_data=mail_data,
-                    namespace_for_memory=namespace_for_memory,
-                )
-                if result and result["status"] == "success":
-                    logger.debug(result["message"])
-
-                    return Command(
-                        update={
-                            "email": data[0],
-                            "current_mail_id": data[0]["id"],
-                        }
+                logger.debug(f"Email data: {data}")
+                if len(data) > 0:
+                    mail_data = MailDataSchema(
+                        mail_id=data[0]["id"],
+                        subject=data[0]["subject"],
+                        sender_email_address=data[0]["sender"],
+                        date_time_received=data[0]["date"],
+                        body=data[0]["body"],
+                        unread=data[0]["unread"],
+                        snippet=data[0]["snippet"],
                     )
+                    result = add_mail_to_object(
+                        username=username,
+                        individual_mail_data=mail_data,
+                        namespace_for_memory=namespace_for_memory,
+                    )
+                    if result and result["status"] == "success":
+                        logger.debug(result["message"])
+
+                        return Command(
+                            update={
+                                "email": data[0],
+                                "current_mail_id": data[0]["id"],
+                            }
+                        )
 
     return Command()
 
 
-def analyze_importance(state: EmailState) -> Command:
+async def analyze_importance(state: EmailState, config: RunnableConfig) -> Command:
     """
     Analyze the importance of the email using the AI toolkit.
     """
@@ -93,7 +95,19 @@ def analyze_importance(state: EmailState) -> Command:
         HumanMessage(content=f"{email_data}"),
     ]
     important_response = _to_text(llm_model.invoke(messages).content).lower().strip()
-
+    # TODO: Add logic to handle the case when the response is not yes or no
+    if important_response == "yes":
+        configurable: Dict[str, Any] | None = config.get("configurable", {})
+        if configurable:
+            username: str = configurable.get("username", "satyam")
+            thread_id: str = configurable.get("thread_id", "test_thread")
+            if username and thread_id:
+                logger.debug(f"Sending proactive message to {username}.")
+                await push_proactive_message(
+                    username,
+                    thread_id,
+                    f"📧 New important email from {email_data['sender']} with subject '{email_data['subject']}'",
+                )
     return Command(
         update={
             "is_mail_important": important_response == "yes",

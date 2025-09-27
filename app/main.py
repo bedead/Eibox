@@ -1,4 +1,5 @@
 # Standard Library
+import asyncio
 import os
 
 # Project Packages
@@ -16,8 +17,10 @@ if settings.LANGSMITH_TRACING:
 
 # --- only after this, import FastAPI and other deps ---
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core.scheduler import scheduler
 from app.core.middleware import add_middleware
 from app.api.v1.routers import (
     cron_router,
@@ -28,13 +31,20 @@ from app.api.v1.routers import (
 )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler.start()
+    yield
+    scheduler.shutdown()
+
+
 # Initialize FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
     description=settings.APP_DESCIPTION,
     summary=settings.APP_SUMMARY,
     version=settings.APP_VERSION,
-    # lifespan=lifespan,
+    lifespan=lifespan,
 )
 
 # Call middleware setup here (before app starts serving requests)

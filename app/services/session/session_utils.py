@@ -21,8 +21,8 @@ def init_or_get_session(
     websocket: Optional[WebSocket] = None,
     session_job: Optional[Job] = None,
     extra_data: Optional[Dict[str, Any]] = None,
-):
-    session: ChatSession = get_session(username=username, thread_id=thread_id)
+) -> Optional[ChatSession]:
+    session: ChatSession | None = get_session(username=username, thread_id=thread_id)
     if session:
         return session
 

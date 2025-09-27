@@ -1,36 +1,47 @@
+import asyncio
 from datetime import datetime
-from app.services.agents.email_agent import EmailAgent, EmailState
+
 from langchain_core.runnables import RunnableConfig
-from app.core.logging import logger
-from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.job import Job
 
+from app.services.agents.email_agent import EmailAgent, EmailState
+from app.core.logging import logger
+from app.core.scheduler import scheduler
 
-def fetch_email_data(username: str, thread_id: str, config: RunnableConfig):
+
+async def fetch_email_data(username: str, thread_id: str, config: RunnableConfig):
     logger.debug(f"[{datetime.now()}] Running email agent job...")
     if "configurable" not in config:
         config["configurable"] = {}
     config["configurable"]["username"] = username
     config["configurable"]["thread_id"] = thread_id
-    result = EmailAgent.invoke(input=EmailState(), config=config)
-    # logger.debug(result)
-
-    # return result
+    result = await EmailAgent.ainvoke(input=EmailState(), config=config)
+    return result
 
 
-scheduler = BackgroundScheduler()
+def schedule_fetch_email_data(username: str, thread_id: str, config: RunnableConfig):
+    """Wrapper to run async fetch in the right event loop."""
+    try:
+        loop = asyncio.get_running_loop()
+        # If we’re already inside FastAPI’s event loop, just create a task
+        loop.create_task(fetch_email_data(username, thread_id, config))
+    except RuntimeError:
+        # No running loop (standalone mode, or APScheduler thread) → run new loop
+        asyncio.run(fetch_email_data(username, thread_id, config))
 
 
 def start_email_scheduler_job(username: str, thread_id: str, interval: int) -> Job:
     config = RunnableConfig(configurable={"thread_id": thread_id})
     job = scheduler.add_job(
-        fetch_email_data,
+        schedule_fetch_email_data,
         args=(username, thread_id, config),
         trigger="interval",
         seconds=interval,
+        coalesce=True,  # skip backlog, run latest if jobs pile up
+        max_instances=1,  # prevent overlapping runs
+        misfire_grace_time=30,  # if late by <30s, run
         id=f"email-fetch-job-{username}-{thread_id}",
     )
-    scheduler.start()
     return job
 
 

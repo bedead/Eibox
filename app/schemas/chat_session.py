@@ -13,18 +13,17 @@ from typing import Any, Dict, Optional
 
 from apscheduler.job import Job
 from fastapi import WebSocket
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.services.gmail_toolkit import GmailToolKit
 
 
 class ChatSession(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)  # allows Job, WebSocket, GmailToolKit
+
     username: str
     thread_id: str
     websocket: Optional[WebSocket] = None
     gmail_toolkit: Optional[GmailToolKit] = None
     session_job: Optional[Job] = None
     extra_data: Optional[Dict[str, Any]] = None
-
-    class Config:
-        arbitrary_types_allowed = True  # allows Job, WebSocket, GmailToolKit

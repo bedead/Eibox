@@ -48,27 +48,14 @@ def create_sequence_graph() -> StateGraph:
     sequence_graph.add_conditional_edges(
         source="get_gmail_toolkit_node",
         path=check_read_email_router,
-        path_map={
-            "get_gmail_toolkit_node": "get_gmail_toolkit_node",
-            "analyze_mail_importance_node": "analyze_mail_importance_node",
-            END: END,
-        },
     )
     sequence_graph.add_conditional_edges(
         source="analyze_mail_importance_node",
         path=email_importance_router,
-        path_map={
-            "is_response_needed_node": "is_response_needed_node",
-            "get_gmail_toolkit_node": "get_gmail_toolkit_node",
-        },
     )
     sequence_graph.add_conditional_edges(
         source="is_response_needed_node",
         path=is_response_needed_router,
-        path_map={
-            "mail_response_format_node": "mail_response_format_node",
-            "get_gmail_toolkit_node": "get_gmail_toolkit_node",
-        },
     )
 
     sequence_graph.add_edge("mail_response_format_node", "generate_draft_response_node")

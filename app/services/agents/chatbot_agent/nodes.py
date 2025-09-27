@@ -23,6 +23,7 @@ from app.utils._prompts import (
     SEMANTIC_MEMORY_PROMPT,
 )
 
+os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY
 
 llm = init_chat_model(model="google_genai:gemini-2.5-flash-lite", temperature=0.6)
 model_with_tools = llm.bind_tools(all_tools)
@@ -54,7 +55,7 @@ def context_update(
             )
 
             llm = init_chat_model(
-                model="google_genai:gemini-1.5-flash", temperature=0.5
+                model="google_genai:gemini-2.0-flash", temperature=0.5
             )
             # Call LLM if semantic memory is available
             # update data
