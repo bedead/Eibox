@@ -1,6 +1,5 @@
 from typing import Any, Dict, Optional, List, Tuple, Union
 
-from click import Option
 from fastapi import HTTPException, WebSocket
 from apscheduler.job import Job
 

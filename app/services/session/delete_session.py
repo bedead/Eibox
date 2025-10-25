@@ -1,4 +1,4 @@
-from .store_session import active_sessions
+from app.services.session.store_session import active_sessions
 from app.core.logger_config import logger
 
 
