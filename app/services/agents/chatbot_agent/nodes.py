@@ -14,7 +14,7 @@ from app.schemas.episodic_mem import EpisodicMemSchema
 from app.schemas.semantic_mem import SemanticMemSchema
 from app.schemas.unread_mails import MailDataSchema, UnreadMailsSchema
 from app.services.agents.chatbot_agent.tools import all_tools
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.core.config import settings
 from app.services.agents.chatbot_agent.states import ChatbotState
 from app.services.agents.chatbot_agent.utils import should_update_memory

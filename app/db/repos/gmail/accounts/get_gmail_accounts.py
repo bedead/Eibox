@@ -18,7 +18,7 @@ from typing import Any, List, Tuple
 from fastapi import HTTPException
 from pydantic import TypeAdapter
 
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.db.redis import db_store
 from app.schemas.gmail_account import GmailAccount
 

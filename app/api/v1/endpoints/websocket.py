@@ -16,7 +16,7 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, WebSocket
 
 from app.core.config import settings
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.db.repos.auth.get_user_data import get_user_data
 from app.schemas.chat_session import ChatSession
 from app.services.jobs import start_email_scheduler_job

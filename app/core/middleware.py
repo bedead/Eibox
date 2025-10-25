@@ -1,5 +1,5 @@
 import time
-from app.core.logging import logger
+from app.core.logger_config import logger
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 

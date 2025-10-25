@@ -4,7 +4,7 @@ from click import Option
 from fastapi import HTTPException, WebSocket
 from apscheduler.job import Job
 
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.db.repos.gmail.accounts import get_gmail_account
 from app.schemas.chat_session import ChatSession
 from app.schemas.gmail_account import GmailAccount

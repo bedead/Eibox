@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Tuple, cast
 
 from fastapi import HTTPException
 
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.utils._api_helper import hash_password
 from app.schemas.login import LoginSchema
 from app.db.redis import db_store

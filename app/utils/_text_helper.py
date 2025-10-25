@@ -1,7 +1,7 @@
 import json
 import re
 from pyparsing import Any
-from app.core.logging import logger
+from app.core.logger_config import logger
 
 
 def _to_text(content: Any) -> str:

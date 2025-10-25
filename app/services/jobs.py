@@ -5,7 +5,7 @@ from langchain_core.runnables import RunnableConfig
 from apscheduler.job import Job
 
 from app.services.agents.email_agent import EmailAgent, EmailState
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.core.scheduler import scheduler
 
 

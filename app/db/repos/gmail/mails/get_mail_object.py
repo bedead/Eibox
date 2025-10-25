@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple, Union
 from fastapi import HTTPException
 from langgraph.store.base import Item
 
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.db.redis import db_store
 from app.schemas.unread_mails import UnreadMailsSchema
 from app.utils.common import safe_json_parse

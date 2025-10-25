@@ -6,7 +6,7 @@ from fastapi import WebSocket
 from langchain_core.messages import AIMessageChunk, HumanMessage
 
 
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.schemas.chat_session import ChatSession
 from app.services.agents.chatbot_agent import ChatAgent, ChatbotState
 from app.services.session.get_session import get_session

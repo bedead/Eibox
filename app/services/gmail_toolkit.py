@@ -1,3 +1,4 @@
+# pylint: disable=no-member
 import time
 import base64
 import threading
@@ -7,7 +8,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.db.repos.gmail.accounts import add_gmail_account
 from app.schemas.gmail_account import GmailAccount
 from app.utils.common import get_gcp_client_id, get_gcp_client_secret

@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 load_dotenv()
 
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.schemas.user_model import UserModel
 from app.schemas.login import LoginSchema
 from app.db.repos.auth.register_user import register_user as ru

@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple, Optional
 from fastapi import WebSocket
 
 from app.schemas.chat_session import ChatSession
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.services.gmail_toolkit import GmailToolKit
 from apscheduler.job import Job
 

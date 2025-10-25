@@ -18,7 +18,7 @@ from langchain_core.runnables.graph import MermaidDrawMethod
 
 load_dotenv()
 
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.core.config import settings
 
 

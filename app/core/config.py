@@ -79,7 +79,6 @@ class Settings(BaseSettings):
     RUN_JOB_SCHEDULER: bool = True  # Set to False for dev server
     LOG_FOLDER_NAME: str = "log_dump"
 
-
     def configure_runtime(self) -> None:
         """
         Post-init adjustments based on environment.

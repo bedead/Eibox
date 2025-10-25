@@ -8,10 +8,10 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
 
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.utils._api_helper import push_proactive_message
 from app.utils._text_helper import _to_text
-from app.core.logging import logger
+from app.core.logger_config import logger
 from app.db.repos.gmail.mails.add_draft_to_mail_object import add_draft_to_mail_object
 from app.db.repos.gmail.mails.add_mail_to_object import add_mail_to_object
 from app.schemas.unread_mails import MailDataSchema

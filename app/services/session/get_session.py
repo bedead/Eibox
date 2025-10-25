@@ -2,7 +2,7 @@ from typing import Optional
 
 from app.schemas.chat_session import ChatSession
 from .store_session import active_sessions
-from app.core.logging import logger
+from app.core.logger_config import logger
 
 
 def get_session(username: str, thread_id: str) -> Optional[ChatSession]:
