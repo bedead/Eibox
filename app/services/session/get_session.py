@@ -1,8 +1,8 @@
 from typing import Optional
 
-from app.schemas.chat_session import ChatSession
+from app.schemas import ChatSession
+from app.core import logger
 from .store_session import active_sessions
-from app.core.logging import logger
 
 
 def get_session(username: str, thread_id: str) -> Optional[ChatSession]:

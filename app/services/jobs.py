@@ -4,9 +4,9 @@ from datetime import datetime
 from langchain_core.runnables import RunnableConfig
 from apscheduler.job import Job
 
-from app.services.agents.email_agent import EmailAgent, EmailState
-from app.core.logging import logger
-from app.core.scheduler import scheduler
+from app.services import EmailAgent, EmailState
+from app.core import logger
+from app.core import scheduler
 
 
 async def fetch_email_data(username: str, thread_id: str, config: RunnableConfig):

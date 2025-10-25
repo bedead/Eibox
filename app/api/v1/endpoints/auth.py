@@ -14,12 +14,9 @@ from pydantic import BaseModel
 
 load_dotenv()
 
-from app.core.logging import logger
-from app.schemas.user_model import UserModel
-from app.schemas.login import LoginSchema
-from app.db.repos.auth.register_user import register_user as ru
-from app.db.repos.auth.login_user import login_user as lu
-from app.db.repos.auth.update_user_data import update_user_data as uud
+from app.core import logger
+from app.schemas import UserModel, LoginSchema
+from app.db import register_user as ru, login_user as lu, update_user_data as uud
 
 
 router = APIRouter()

@@ -2,7 +2,7 @@ from datetime import datetime
 import logging
 import os
 from dotenv import load_dotenv
-from app.core.config import settings
+from app.core import settings
 
 load_dotenv()
 

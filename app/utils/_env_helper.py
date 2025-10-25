@@ -14,7 +14,6 @@ from typing import Any, Dict, List, Literal, Union
 
 
 from dotenv import load_dotenv
-from langchain_core.runnables.graph import MermaidDrawMethod
 
 load_dotenv()
 
@@ -107,81 +106,3 @@ def get_groq_key():
         logger.critical(f"Missing required environment variable: GROQ_API_KEY")
         raise RuntimeError("Missing required environment variable: GROQ_API_KEY")
     return var
-
-
-def display_graph(
-    compiled_graph, use_mermaid: bool = False, use_api: bool = False, max_retry: int = 1
-):
-    """
-    Display the image of the compiled graph.
-    """
-    if use_mermaid:
-        compiled_graph.get_graph().draw_mermaid_png(
-            output_file_path="graph.png",
-            draw_method=(
-                MermaidDrawMethod.PYPPETEER if not use_api else MermaidDrawMethod.API
-            ),
-            max_retries=max_retry,
-        )
-    else:
-        compiled_graph.get_graph().draw_png()
-
-
-def deep_merge_dicts(original: dict, updates: dict) -> dict:
-    """Recursively merge updates into original dict. Append to lists instead of overwriting."""
-    for key, value in updates.items():
-        if key in original:
-            if isinstance(original[key], dict) and isinstance(value, dict):
-                # Merge nested dicts
-                original[key] = deep_merge_dicts(original[key], value)
-            elif isinstance(original[key], list) and isinstance(value, list):
-                # Append unique values to lists
-                for v in value:
-                    if v not in original[key]:
-                        original[key].append(v)
-            else:
-                # Overwrite scalars
-                original[key] = value
-        else:
-            original[key] = value
-    return original
-
-
-def safe_json_parse(
-    data: Union[str, Dict[str, Any], List[Any]],
-    get: Literal["dict", "list"] = "dict",
-) -> Union[Dict[str, Any], List[Any], Any]:
-    """
-    Universal JSON parser that safely converts strings to Python objects (dict, list, etc.).
-
-    - If `data` is already a dict/list, returns it as-is.
-    - If `data` is a JSON string, parses it.
-    - If parsing fails, returns `default` (defaults to original data).
-    - Works recursively for nested JSON strings (if needed).
-    """
-    # If already a Python object, just return
-    if isinstance(data, (dict, list)):
-        return data
-
-    # Try parsing JSON string
-    if isinstance(data, str):
-        data = data.strip()
-        # Only try parsing if it *looks like* JSON
-        if data.startswith("{") or data.startswith("["):
-            try:
-                parsed = json.loads(data)
-
-                # Ensure type matches `get`
-                if get == "dict" and not isinstance(parsed, dict):
-                    raise ValueError("Expected dict but got something else")
-                if get == "list" and not isinstance(parsed, list):
-                    raise ValueError("Expected list but got something else")
-
-                # Recursively parse if there are nested JSON strings
-                if isinstance(parsed, dict):
-                    return {str(k): safe_json_parse(v, get="dict") for k, v in parsed.items()}  # type: ignore
-                elif isinstance(parsed, list):
-                    return [safe_json_parse(v, get="list") for v in parsed]  # type: ignore
-                return parsed
-            except (TypeError, json.JSONDecodeError) as e:
-                raise ValueError("Invalid JSON input") from e

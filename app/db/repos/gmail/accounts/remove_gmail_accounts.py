@@ -16,7 +16,7 @@ from typing import Tuple
 from fastapi import HTTPException
 
 from app.db.redis import db_store
-from app.core.logging import logger
+from app.core import logger
 
 
 def remove_gmail_account(username: str, namespace_for_memory: Tuple[str, str]):

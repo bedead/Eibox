@@ -1,6 +1,4 @@
 # from apscheduler.job import Job
-from app.schemas.chat_session import ChatSession
-from app.services.gmail_toolkit import GmailToolKit
 # from app.services.job_scheduler.jobs import (
 #     delete_email_scheduler_job,
 #     start_email_scheduler_job,
@@ -9,7 +7,9 @@ from langchain_core.runnables import RunnableConfig
 from typing import Any, Dict, List, Optional
 from langchain_core.tools import tool
 
-from app.services.session.get_session import get_session
+from app.schemas import ChatSession
+from app.services import GmailToolKit
+from app.services import get_session
 
 
 # TODO: add more util tools
@@ -154,7 +154,12 @@ def search_gmails_tool(
             max_results=5
         )
     """
-    session: ChatSession = get_session(username=username, thread_id=thread_id)
+    session: Optional[ChatSession] = get_session(username=username, thread_id=thread_id)
+    if not session:
+        return {
+            "status": "error",
+            "error": f"No active session found for username: {username}, thread_id: {thread_id}",
+        }
     if session.gmail_toolkit:
         gmail_toolkit: GmailToolKit = session.gmail_toolkit
         try:
@@ -206,7 +211,13 @@ def delete_email_tool(username: str, thread_id: str, message_id: str) -> Dict[st
         dict: A dictionary containing the status of the deletion operation.
               Example: {"status": "success"} or {"status": "error", "error": "Error message"}
     """
-    session: ChatSession = get_session(username=username, thread_id=thread_id)
+    session: Optional[ChatSession] = get_session(username=username, thread_id=thread_id)
+    if not session:
+        return {
+            "status": "error",
+            "error": f"No active session found for username: {username}, thread_id: {thread_id}",
+        }
+
     if session.gmail_toolkit:
         gmail_toolkit: GmailToolKit = session.gmail_toolkit
         try:
@@ -219,81 +230,6 @@ def delete_email_tool(username: str, thread_id: str, message_id: str) -> Dict[st
             "status": "info",
             "info": f"User: {session.username} has not connected Any Gmail account yet.",
         }
-
-
-# @tool
-# def get_day_of_week() -> str:
-#     """
-#     Returns the current day of the week (e.g., Monday, Tuesday).
-
-#     Useful for scheduling tasks or contextualizing events based on the weekday.
-
-#     Returns:
-#         str: The current day of the week.
-#     """
-#     from datetime import datetime
-
-#     return datetime.now().strftime("%A")
-
-
-# @tool
-# def get_day_of_month() -> int:
-#     """
-#     Returns the current day of the month as an integer.
-
-#     Useful for monthly routines, bill reminders, or date-based triggers.
-
-#     Returns:
-#         int: The current day of the month (1-31).
-#     """
-#     from datetime import datetime
-
-#     return datetime.now().day
-
-
-# @tool
-# def get_day_of_year() -> int:
-#     """
-#     Returns the current day of the year as an integer (1-366).
-
-#     Useful for progress tracking or seasonal calculations.
-
-#     Returns:
-#         int: The current day of the year.
-#     """
-#     from datetime import datetime
-
-#     return int(datetime.now().strftime("%j"))
-
-
-# @tool
-# def get_week_number() -> int:
-#     """
-#     Returns the ISO week number of the current year (1-53).
-
-#     Useful for weekly planning and organization.
-
-#     Returns:
-#         int: The current ISO week number.
-#     """
-#     from datetime import datetime
-
-#     return datetime.now().isocalendar().week
-
-
-# @tool
-# def is_weekend() -> bool:
-#     """
-#     Checks whether today is a weekend (Saturday or Sunday).
-
-#     Useful for determining off-days or adjusting behavior based on work schedule.
-
-#     Returns:
-#         bool: True if today is Saturday or Sunday, False otherwise.
-#     """
-#     from datetime import datetime
-
-#     return datetime.now().weekday() >= 5
 
 
 all_tools = [

@@ -14,7 +14,7 @@ from fastapi import HTTPException
 from app.schemas.user_model import UserModel
 from app.core.logging import logger
 from app.db.redis import db_store
-from app.utils.common import deep_merge_dicts, safe_json_parse
+from app.utils._env_helper import deep_merge_dicts, safe_json_parse
 
 
 def update_user_data(

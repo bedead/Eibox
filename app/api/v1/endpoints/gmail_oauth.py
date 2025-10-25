@@ -20,19 +20,17 @@ from google.auth.credentials import Credentials
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from app.db.repos.gmail.accounts import add_gmail_account
-from app.db.repos.auth.update_user_data import update_user_data as uud
-from app.schemas.gmail_account import GmailAccount
-from app.core.config import settings
-from app.utils._oauth_templates import (
+from app.db import add_gmail_account, update_user_data as uud
+from app.schemas import GmailAccount
+from app.core import settings
+from app.utils import (
     CALLBACK_ERROR_TEMPLATE,
     CALLBACK_SUCCESS_TEMPLATE,
-)
-from app.utils.common import (
     get_gcp_client_id,
     get_gcp_client_secret,
     get_gmail_redirect_uri,
 )
+
 
 GOOGLE_CLIENT_ID: str = get_gcp_client_id()
 GOOGLE_CLIENT_SECRET: str = get_gcp_client_secret()

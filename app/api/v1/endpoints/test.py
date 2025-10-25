@@ -15,21 +15,19 @@ from fastapi import APIRouter, HTTPException, WebSocket
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from app.core.config import settings
-from app.db.repos.auth.get_user_data import get_user_data
-from app.services.jobs import start_email_scheduler_job
-from app.services.session.session_utils import (
-    close_websocket_session,
-    init_or_get_session,
-)
-
 load_dotenv()
 
-from app.core.logging import logger
-from app.db.repos.gmail.accounts import get_gmail_account
+
+from app.core import settings, logger
 from app.schemas.chat_session import ChatSession
-from app.services.session.get_session import get_session
-from app.services.session.delete_session import delete_session
+from app.db import get_user_data, get_gmail_account
+from app.services import (
+    start_email_scheduler_job,
+    close_websocket_session,
+    init_or_get_session,
+    get_session,
+    delete_session,
+)
 
 
 router = APIRouter()
@@ -100,8 +98,13 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
 
 @router.post("/chatbot/close/{username}/{thread_id}")
 async def close_chat_websocket(username: str, thread_id: str):
-    session: ChatSession = get_session(username, thread_id)
-    websocket: Optional[WebSocket | None] = session.websocket
+    session: Optional[ChatSession] = get_session(username, thread_id)
+    if session is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No active session found for username {username} and thread ID {thread_id}.",
+        )
+    websocket: Optional[WebSocket] = session.websocket
 
     return await close_websocket_session(
         username=username, thread_id=thread_id, websocket=websocket

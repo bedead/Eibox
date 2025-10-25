@@ -10,7 +10,7 @@ the store if available.
 from langgraph.store.redis import RedisStore
 
 from app.core.logging import logger
-from app.utils.common import get_cloud_redis_store_host
+from app.utils._env_helper import get_cloud_redis_store_host
 
 
 db_store: RedisStore
