@@ -29,4 +29,5 @@ jobs:
 
       - name: Analysing the code with pylint
         run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
           pylint $(git ls-files '*.py') --disable=all --enable=E
