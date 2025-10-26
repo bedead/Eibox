@@ -14,8 +14,7 @@ from typing import List
 
 from fastapi import APIRouter
 
-from app.db import get_gmail_account
-from app.schemas import GmailAccount, CronJobSchema
+from app.db import GmailAccount, CronJobSchema
 from app.utils import job_to_dict
 from app.services import (
     start_email_scheduler_job,
@@ -23,6 +22,7 @@ from app.services import (
     GmailToolKit,
     delete_session,
     store_session,
+    get_gmail_account,
 )
 
 router = APIRouter()

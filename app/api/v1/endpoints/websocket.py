@@ -16,16 +16,17 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, HTTPException, WebSocket
 
 from app.core import settings, logger
-from app.db import get_user_data
-from app.schemas import ChatSession
+from app.db import ChatSession
 from app.services import (
     start_email_scheduler_job,
     delete_session,
     get_session,
     close_websocket_session,
     init_or_get_session,
+    get_user_data,
+    call_main_agent,
 )
-from app.utils import call_graph, minutes_to_seconds
+from app.utils import minutes_to_seconds
 
 router = APIRouter()
 
@@ -80,7 +81,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
 
             # Decide whether to stream or not
             streaming = False
-            async for ai_output in await call_graph(
+            async for ai_output in await call_main_agent(
                 user_input=message,
                 username=username,
                 thread_id=thread_id,

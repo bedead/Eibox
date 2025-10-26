@@ -19,8 +19,7 @@ from fastapi import HTTPException
 from pydantic import TypeAdapter
 
 from app.core import logger
-from app.db.redis import db_store
-from app.schemas.gmail_account import GmailAccount
+from app.db import db_store, GmailAccount
 
 
 def get_gmail_account(

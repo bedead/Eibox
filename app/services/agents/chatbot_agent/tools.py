@@ -7,9 +7,9 @@ from langchain_core.runnables import RunnableConfig
 from typing import Any, Dict, List, Optional
 from langchain_core.tools import tool
 
-from app.schemas import ChatSession
-from app.services import GmailToolKit
-from app.services import get_session
+from app.db import ChatSession
+from app.services.gmail_toolkit import GmailToolKit
+from app.services.session.get_session import get_session
 
 
 # TODO: add more util tools

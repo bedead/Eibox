@@ -3,9 +3,9 @@ from typing import Any, Dict, Tuple, Optional
 from fastapi import WebSocket
 from apscheduler.job import Job
 
-from app.schemas import ChatSession
+from app.db import ChatSession
 from app.core import logger
-from app.services import GmailToolKit
+from app.services.gmail_toolkit import GmailToolKit
 
 active_sessions: Dict[Tuple[str, str], ChatSession] = {}
 

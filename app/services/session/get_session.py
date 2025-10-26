@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app.schemas import ChatSession
+from app.db import ChatSession
 from app.core import logger
 from .store_session import active_sessions
 

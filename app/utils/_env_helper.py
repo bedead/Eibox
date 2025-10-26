@@ -9,16 +9,12 @@ This module provides:
 - Safe universal JSON parsing for strings and Python objects.
 """
 
-import json
-from typing import Any, Dict, List, Literal, Union
-
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from app.core.logging import logger
-from app.core.config import settings
+from app.core import logger, settings
 
 
 def get_gcp_client_id() -> str:

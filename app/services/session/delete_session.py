@@ -1,5 +1,5 @@
 from .store_session import active_sessions
-from app.core.logging import logger
+from app.core import logger
 
 
 def delete_session(username: str, thread_id: str):

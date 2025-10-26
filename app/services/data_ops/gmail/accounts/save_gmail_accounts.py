@@ -18,8 +18,7 @@ from typing import List, Tuple
 from fastapi import HTTPException
 
 from app.core import logger
-from app.db import db_store
-from app.schemas.gmail_account import GmailAccount
+from app.db import db_store, GmailAccount
 
 
 def save_gmail_account(

@@ -20,8 +20,8 @@ from google.auth.credentials import Credentials
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from app.db import add_gmail_account, update_user_data as uud
-from app.schemas import GmailAccount
+from app.services import add_gmail_account, update_user_data as uud
+from app.db import GmailAccount
 from app.core import settings
 from app.utils import (
     CALLBACK_ERROR_TEMPLATE,

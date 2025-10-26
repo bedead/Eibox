@@ -9,20 +9,21 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain.chat_models import init_chat_model
 
 from app.core.logging import logger
-from app.utils._api_helper import push_proactive_message
-from app.utils._text_helper import _to_text
-from app.core.logging import logger
-from app.db.repos.gmail.mails.add_draft_to_mail_object import add_draft_to_mail_object
-from app.db.repos.gmail.mails.add_mail_to_object import add_mail_to_object
-from app.schemas.unread_mails import MailDataSchema
-from app.services.gmail_toolkit import GmailToolKit
-from app.services.session.get_session import get_session
-from app.utils._prompts import (
+from app.db import MailDataSchema
+from app.utils import (
     IS_MAIL_IMPORTANT_PROMPT,
     IS_RESPONSE_NEEDED_PROMPT,
     MAIL_RESPONSE_FORMAT_PROMPT,
     GENERATE_MAIL_RESPONSE_SUGGESTION_PROMPT,
+    _to_text,
 )
+from app.services.data_ops.gmail.mails.add_draft_to_mail_object import (
+    add_draft_to_mail_object,
+)
+from app.services.chat_service import push_proactive_message
+from app.services.data_ops.gmail.mails.add_mail_to_object import add_mail_to_object
+from app.services.gmail_toolkit import GmailToolKit
+from app.services.session.get_session import get_session
 from app.services.agents.email_agent.states import EmailState
 
 

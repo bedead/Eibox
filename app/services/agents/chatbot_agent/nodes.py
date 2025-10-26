@@ -9,21 +9,19 @@ from langgraph.store.base import BaseStore, Item
 from langchain_core.runnables import RunnableConfig
 from langchain.chat_models import init_chat_model
 
-from app.db import get_mail_object
-from app.schemas import EpisodicMemSchema
-from app.schemas import SemanticMemSchema
-from app.schemas import UnreadMailsSchema
+from app.db import EpisodicMemSchema, SemanticMemSchema, UnreadMailsSchema
+from app.services.agents.chatbot_agent.states import ChatbotState
 from app.services.agents.chatbot_agent.tools import all_tools
-from app.core import logger
-from app.core import settings
-from app.utils._text_helper import _to_text, clean_and_parse_ai_output
-from app.utils._prompts import (
+from app.services.agents.chatbot_agent.utils import should_update_memory
+from app.services.data_ops.gmail.mails.get_mail_object import get_mail_object
+from app.core import logger, settings
+from app.utils import (
     CHATBOT_SYSTEM_INSTRUCTION,
     EPISODIC_MEMORY_PROMPT,
     SEMANTIC_MEMORY_PROMPT,
+    _to_text,
+    clean_and_parse_ai_output,
 )
-from .states import ChatbotState
-from .utils import should_update_memory
 
 os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY
 

@@ -19,14 +19,15 @@ load_dotenv()
 
 
 from app.core import settings, logger
-from app.schemas.chat_session import ChatSession
-from app.db import get_user_data, get_gmail_account
+from app.db import ChatSession
 from app.services import (
     start_email_scheduler_job,
     close_websocket_session,
     init_or_get_session,
     get_session,
     delete_session,
+    get_user_data,
+    get_gmail_account,
 )
 
 
