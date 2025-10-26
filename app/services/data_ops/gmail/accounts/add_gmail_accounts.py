@@ -16,9 +16,9 @@ from typing import List, Tuple
 
 from fastapi import HTTPException
 
-from app.schemas.gmail_account import GmailAccount
-from app.db.repos.gmail.accounts.save_gmail_accounts import save_gmail_account
-from app.db.repos.gmail.accounts.get_gmail_accounts import get_gmail_account
+from app.db import GmailAccount
+from app.services.data_ops.gmail.accounts.save_gmail_accounts import save_gmail_account
+from app.services.data_ops.gmail.accounts.get_gmail_accounts import get_gmail_account
 
 
 def add_gmail_account(new_account: GmailAccount, namespace_for_memory: Tuple[str, str]):

@@ -13,20 +13,20 @@ Date: 14-09-2025
 
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, HTTPException, WebSocket
 
-from app.core.config import settings
-from app.core.logger_config import logger
-from app.db.repos.auth.get_user_data import get_user_data
-from app.schemas.chat_session import ChatSession
-from app.services.jobs import start_email_scheduler_job
-from app.services.session.delete_session import delete_session
-from app.services.session.get_session import get_session
-from app.services.session.session_utils import (
+from app.core import settings, logger
+from app.db import ChatSession
+from app.services import (
+    start_email_scheduler_job,
+    delete_session,
+    get_session,
     close_websocket_session,
     init_or_get_session,
+    get_user_data,
+    call_main_agent,
 )
-from app.utils._api_helper import call_graph, minutes_to_seconds
+from app.utils import minutes_to_seconds
 
 router = APIRouter()
 
@@ -66,7 +66,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
             interval=email_monitoring_frequency_seconds,
         )
 
-    session = init_or_get_session(
+    s = init_or_get_session(
         username=username,
         thread_id=thread_id,
         websocket=websocket,
@@ -81,7 +81,7 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
 
             # Decide whether to stream or not
             streaming = False
-            async for ai_output in await call_graph(
+            async for ai_output in await call_main_agent(
                 user_input=message,
                 username=username,
                 thread_id=thread_id,
@@ -106,7 +106,10 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
 
 @router.post("/close/{username}/{thread_id}")
 async def close_websocket(username: str, thread_id: str):
-    session: ChatSession = get_session(username, thread_id)
+    session: Optional[ChatSession] = get_session(username, thread_id)
+    if not session:
+        return HTTPException(status_code=404, detail="Session not found")
+
     websocket: Optional[WebSocket | None] = session.websocket
 
     return await close_websocket_session(

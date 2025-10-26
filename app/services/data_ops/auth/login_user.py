@@ -10,11 +10,9 @@ from typing import Any, Dict, List, Tuple, cast
 
 from fastapi import HTTPException
 
-from app.core.logger_config import logger
-from app.utils._api_helper import hash_password
-from app.schemas.login import LoginSchema
-from app.db.redis import db_store
-from app.utils.common import safe_json_parse
+from app.core import logger
+from app.utils import hash_password, safe_json_parse
+from app.db import db_store, LoginSchema
 
 
 def login_user(

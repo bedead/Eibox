@@ -7,9 +7,8 @@ from typing import Any, Dict, Tuple
 
 from fastapi import HTTPException
 
-from app.utils._api_helper import hash_password
-from app.schemas.user_model import UserModel
-from app.db.redis import db_store
+from app.utils import hash_password
+from app.db import db_store, UserModel
 
 
 def register_user(

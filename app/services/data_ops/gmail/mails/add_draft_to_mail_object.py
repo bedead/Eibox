@@ -4,10 +4,9 @@ from typing import Dict, Tuple, Union
 
 from fastapi import HTTPException
 
-from app.core.logger_config import logger
-from app.db.repos.gmail.mails.get_mail_object import get_mail_object
-from app.schemas.unread_mails import UnreadMailsSchema
-from app.db.redis import db_store
+from app.core import logger
+from app.services.data_ops.gmail.mails.get_mail_object import get_mail_object
+from app.db import db_store, UnreadMailsSchema
 
 
 def add_draft_to_mail_object(

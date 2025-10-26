@@ -3,10 +3,9 @@ from typing import Any, Dict, Optional, List, Tuple, Union
 from fastapi import HTTPException, WebSocket
 from apscheduler.job import Job
 
-from app.core.logger_config import logger
-from app.db.repos.gmail.accounts import get_gmail_account
-from app.schemas.chat_session import ChatSession
-from app.schemas.gmail_account import GmailAccount
+from app.core import logger
+from app.db import ChatSession, GmailAccount
+from app.services.data_ops.gmail.accounts.get_gmail_accounts import get_gmail_account
 from app.services.gmail_toolkit import GmailToolKit
 from app.services.session.delete_session import delete_session
 from app.services.session.get_session import get_session

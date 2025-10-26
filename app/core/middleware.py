@@ -1,11 +1,12 @@
 import time
-from app.core.logger_config import logger
+from typing import Callable, Awaitable
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-
-
-from typing import Callable, Awaitable
 from starlette.responses import Response
+
+
+from app.core import logger
 
 
 def add_middleware(app: FastAPI):

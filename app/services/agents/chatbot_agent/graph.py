@@ -2,7 +2,7 @@ from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from langgraph.checkpoint.memory import MemorySaver
 
-from app.db.redis import db_store
+from app.db import db_store
 from app.services.agents.chatbot_agent.states import ChatbotState
 from app.services.agents.chatbot_agent.tools import all_tools
 from app.services.agents.chatbot_agent.nodes import context_update, chatbot

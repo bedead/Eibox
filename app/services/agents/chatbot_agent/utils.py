@@ -1,7 +1,6 @@
 from typing import List, Optional
 
-from app.core.logger_config import logger
-from app.utils._text_helper import _to_text
+from app.utils import _to_text
 
 from langchain_core.messages import BaseMessage
 

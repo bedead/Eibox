@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 import os
-from typing import List, Dict, Any, cast
+from typing import Dict, Any
 
 from langchain_core.messages import SystemMessage
 from langgraph.types import Command
@@ -9,20 +9,18 @@ from langgraph.store.base import BaseStore, Item
 from langchain_core.runnables import RunnableConfig
 from langchain.chat_models import init_chat_model
 
-from app.db.repos.gmail.mails.get_mail_object import get_mail_object
-from app.schemas.episodic_mem import EpisodicMemSchema
-from app.schemas.semantic_mem import SemanticMemSchema
-from app.schemas.unread_mails import MailDataSchema, UnreadMailsSchema
-from app.services.agents.chatbot_agent.tools import all_tools
-from app.core.logger_config import logger
-from app.core.config import settings
+from app.db import EpisodicMemSchema, SemanticMemSchema, UnreadMailsSchema
 from app.services.agents.chatbot_agent.states import ChatbotState
+from app.services.agents.chatbot_agent.tools import all_tools
 from app.services.agents.chatbot_agent.utils import should_update_memory
-from app.utils._text_helper import _to_text, clean_and_parse_ai_output
-from app.utils._prompts import (
+from app.services.data_ops.gmail.mails.get_mail_object import get_mail_object
+from app.core import logger, settings
+from app.utils import (
     CHATBOT_SYSTEM_INSTRUCTION,
     EPISODIC_MEMORY_PROMPT,
     SEMANTIC_MEMORY_PROMPT,
+    _to_text,
+    clean_and_parse_ai_output,
 )
 
 os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY

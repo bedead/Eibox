@@ -8,11 +8,10 @@ from typing import Any, Dict, List, Optional, Union, cast
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 
-from app.core.logger_config import logger
-from app.db.repos.gmail.accounts import add_gmail_account
-from app.schemas.gmail_account import GmailAccount
-from app.utils.common import get_gcp_client_id, get_gcp_client_secret
-from app.core.config import settings
+from app.core import logger, settings
+from app.db import GmailAccount
+from app.services.data_ops.gmail.accounts.add_gmail_accounts import add_gmail_account
+from app.utils import get_gcp_client_id, get_gcp_client_secret
 
 
 class GmailToolKit:

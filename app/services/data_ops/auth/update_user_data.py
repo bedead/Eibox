@@ -11,10 +11,9 @@ from typing import Any, Dict, Optional, Tuple
 
 from fastapi import HTTPException
 
-from app.schemas.user_model import UserModel
-from app.core.logger_config import logger
-from app.db.redis import db_store
-from app.utils.common import deep_merge_dicts, safe_json_parse
+from app.core import logger
+from app.db import db_store, UserModel
+from app.utils import deep_merge_dicts, safe_json_parse
 
 
 def update_user_data(
