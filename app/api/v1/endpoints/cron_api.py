@@ -48,15 +48,16 @@ def start_gmail_cron(input: CronJobSchema):
         thread_id=input.thread_id,
         interval=30,
     )
+
+    # TODO: add cron job to session
+
     return job_to_dict(job)
     # return job
 
 
 @router.post("/gmail/delete/")
 def delete_gmail_cron(input: CronJobSchema):
-    # delete session
-    delete_session(username=input.username, thread_id=input.thread_id)
-
+    # TODO: remove cron job from session
     return delete_email_scheduler_job(
         username=input.username, thread_id=input.thread_id
     )

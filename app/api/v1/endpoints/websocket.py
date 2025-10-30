@@ -18,7 +18,6 @@ from fastapi import APIRouter, HTTPException, WebSocket
 from app.core import settings, logger
 from app.db import ChatSession
 from app.services import (
-    start_email_scheduler_job,
     delete_session,
     get_session,
     close_websocket_session,
@@ -57,21 +56,14 @@ async def websocket_endpoint(websocket: WebSocket, username: str, thread_id: str
     )
 
     # Run email fetch scheduler job if enabled fron configs and user settings has auto_email_monitoring enabled
-    job = None  # Empty job to avoid reference before assignment error
     if settings.RUN_JOB_SCHEDULER and auto_email_monitoring:
         logger.debug("Starting auto email fetch scheduler job...")
-        job = start_email_scheduler_job(
-            username=username,
-            thread_id=thread_id,
-            interval=email_monitoring_frequency_seconds,
-        )
 
     s = init_or_get_session(
         username=username,
         thread_id=thread_id,
         websocket=websocket,
         namespace_for_memory=namespace_for_memory,
-        session_job=job,
         extra_data=user_data,
     )
 

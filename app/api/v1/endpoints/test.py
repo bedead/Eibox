@@ -21,7 +21,6 @@ load_dotenv()
 from app.core import settings, logger
 from app.db import ChatSession
 from app.services import (
-    start_email_scheduler_job,
     close_websocket_session,
     init_or_get_session,
     get_session,
@@ -64,19 +63,14 @@ async def open_chat_websocket(websocket: WebSocket, username: str, thread_id: st
     )
 
     # Run email fetch scheduler job if enabled fron configs
-    job = None  # Empty job to avoid reference before assignment error
     if settings.RUN_JOB_SCHEDULER and auto_email_monitoring:
         logger.debug("Starting auto email fetch scheduler job...")
-        job = start_email_scheduler_job(
-            username=username, thread_id=thread_id, interval=1800
-        )
 
-    session = init_or_get_session(
+    s = init_or_get_session(
         username=username,
         thread_id=thread_id,
         websocket=websocket,
         namespace_for_memory=namespace_for_memory,
-        session_job=job,
         extra_data=user_data,
     )
 
