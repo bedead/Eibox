@@ -4,8 +4,11 @@ from fastapi import WebSocket
 from apscheduler.job import Job
 
 from app.db import ChatSession
-from app.core import logger
 from app.services.gmail_toolkit import GmailToolKit
+from app.core import logger
+
+# 🔧 Force forward reference resolution now that both exist
+ChatSession.model_rebuild()
 
 active_sessions: Dict[Tuple[str, str], ChatSession] = {}
 
