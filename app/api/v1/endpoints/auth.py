@@ -56,6 +56,7 @@ def register_user(user: RegisterRequest):
             "auto_email_monitoring": False,
             "email_monitoring_frequency": 60,
             "email_notifications": False,
+            "voice_output_enabled": False,
             "connected_gmail_accounts_email": user.gmail_accounts or [],
         },
     }
@@ -78,6 +79,7 @@ class UpdateUserDataRequest(BaseModel):
 
     username: str
     full_name: Optional[str] = None
+    voice_output_enabled: Optional[bool] = None
     auto_email_monitoring: Optional[bool] = None
     email_monitoring_frequency: Optional[int] = None
     email_notifications: Optional[bool] = None
@@ -89,6 +91,9 @@ def update_user_data(payload: UpdateUserDataRequest):
     # Build app_settings dict only with non-None values
     app_settings: Dict[str, Any] = {}
     logger.debug(f"Payload received: {payload}")
+
+    if payload.voice_output_enabled is not None:
+        app_settings["voice_output_enabled"] = payload.voice_output_enabled
 
     if payload.auto_email_monitoring is not None:
         app_settings["auto_email_monitoring"] = payload.auto_email_monitoring
