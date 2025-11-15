@@ -61,3 +61,8 @@ def delete_gmail_cron(input: CronJobSchema):
     return delete_email_scheduler_job(
         username=input.username, thread_id=input.thread_id
     )
+
+
+def modify_gmail_cron(input: CronJobSchema):
+    
+    pass  # TODO: implement modify gmail cron job functionality
