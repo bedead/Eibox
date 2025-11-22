@@ -37,16 +37,10 @@ def start_gmail_cron(input: CronJobSchema):
     )
     gmail_toolkit = GmailToolKit(gmail_account=data[0])
 
-    # store session
-    store_session(
-        username=input.username,
-        thread_id=input.thread_id,
-        gmail_toolkit=gmail_toolkit,
-    )
     job = start_email_scheduler_job(
         username=input.username,
         thread_id=input.thread_id,
-        interval=30,
+        interval=input.preferences.get("interval_seconds"),
     )
 
     # TODO: add cron job to session
@@ -63,6 +57,7 @@ def delete_gmail_cron(input: CronJobSchema):
     )
 
 
+@router.post("/gmail/modify/")
 def modify_gmail_cron(input: CronJobSchema):
-    
+
     pass  # TODO: implement modify gmail cron job functionality

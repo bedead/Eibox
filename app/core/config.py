@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     APP_SUMMARY: str = (
         "AI-powered email assistant that reads, categorizes, prioritizes, and responds to emails automatically, helping users manage their inbox efficiently."
     )
-    APP_VERSION: str = "0.2.4"
+    APP_VERSION: str = "0.3.4"
 
     # =============================
     # API Details
@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     # =============================
     SCHEDULER_API_ENABLED: bool = False
     LOG_TYPE: str = "debug"
-    RUN_JOB_SCHEDULER: bool = True  # Set to False for dev server
+    RUN_JOB_SCHEDULER: bool = False  # Set to False for dev server
     LOG_FOLDER_NAME: str = "log_dump"
 
     def configure_runtime(self) -> None:

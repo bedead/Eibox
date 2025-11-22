@@ -7,9 +7,13 @@ thread ID as required fields, with descriptive metadata for validation
 and documentation.
 """
 
+from typing import Any, Dict
 from pydantic import BaseModel, Field
 
 
 class CronJobSchema(BaseModel):
     username: str = Field(description="Username for the cron job")
     thread_id: str = Field(description="Thread ID for the cron job")
+    preferences: Dict[str, Any] = Field(
+        description="Preferences and settings for cron job"
+    )

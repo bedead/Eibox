@@ -175,6 +175,8 @@ def chatbot(state: ChatbotState, store: BaseStore, config: RunnableConfig) -> Co
         BACKGROUND_EMAIL_AGENT_RUNNING=settings.RUN_JOB_SCHEDULER,
     )
 
+    # print('System Instruction:', system_instruction)
+
     messages = [
         SystemMessage(content=system_instruction),
     ] + state.messages
