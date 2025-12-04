@@ -1,6 +1,8 @@
+from typing import Literal
 from fastapi import APIRouter
 from pydantic import BaseModel
 
+from app.services import remove_gmail_account as rga
 
 router = APIRouter()
 namespace_for_memory = ("auth", "user")
@@ -22,3 +24,26 @@ def delete_user_account(user: DeleteAccountRequest):
 @router.post("/reset_ai_agent_directions")
 def reset_user_specific_ai_agent_directions():
     pass
+
+
+class RemoveGmailAccountRequest(BaseModel):
+    """Payload schema for removing connected Gmail account."""
+
+    username: str
+    email_address: str
+
+
+@router.post("/gmail_account/remove")
+def remove_connected_gmail_account(input: RemoveGmailAccountRequest):
+    result = rga(
+        username=input.username,
+        namespace_for_memory=namespace_for_memory,
+        email_address=input.email_address,
+    )
+    return result
+
+
+## More endpoints for other third party account removals can be added here
+# @router.post("/outlook_account/remove")
+# def remove_connected_outlook_account():
+#     pass
