@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     # =============================
     # App logging / scheduler
     # =============================
-    SCHEDULER_API_ENABLED: bool = False
+    CRON_SCHEDULER_API_ENABLED: bool = True
     LOG_TYPE: str = "debug"
     RUN_JOB_SCHEDULER: bool = False  # Set to False for dev server
     LOG_FOLDER_NAME: str = "log_dump"

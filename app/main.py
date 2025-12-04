@@ -61,7 +61,7 @@ app.add_middleware(
 API_V1_PREFIX = "/v1"
 
 # Include cron router (containing schedular start/stop/etc) only if scheduler is enabled
-if settings.SCHEDULER_API_ENABLED:
+if settings.CRON_SCHEDULER_API_ENABLED:
     app.include_router(cron_router, prefix=f"{API_V1_PREFIX}/cron", tags=["cron"])
 
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["auth"])

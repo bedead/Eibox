@@ -32,6 +32,8 @@ namespace_for_memory = ("auth", "user")
 @router.post("/gmail/start/")
 def start_gmail_cron(input: CronJobSchema):
     # get gmail_account data create gmail_toolkit
+    print("Input received for starting gmail cron job:", input)
+
     data: List[GmailAccount] = get_gmail_account(
         username=input.username, namespace_for_memory=namespace_for_memory
     )
