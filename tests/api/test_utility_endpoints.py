@@ -2,9 +2,8 @@
 E2E tests for utility/test endpoints.
 Tests health check, Google account retrieval, and session management.
 """
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 from typing import Dict, Any
 
 
