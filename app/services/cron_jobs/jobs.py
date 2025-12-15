@@ -35,17 +35,33 @@ def start_email_scheduler_job(
     username: str, thread_id: str, interval: Optional[int] = 30
 ) -> Job:
     config = RunnableConfig(configurable={"thread_id": thread_id})
-    job = scheduler.add_job(
+    job: Job = scheduler.add_job(
         schedule_fetch_email_data,
         args=(username, thread_id, config),
         trigger="interval",
-        seconds=interval, # in secondds
+        seconds=interval,  # in secondds
         coalesce=True,  # skip backlog, run latest if jobs pile up
         max_instances=1,  # prevent overlapping runs
         misfire_grace_time=30,  # if late by <30s, run
         id=f"email-fetch-job-{username}-{thread_id}",
     )
     return job
+
+
+def modify_email_scheduler_job(
+    username: str, thread_id: str, interval: Optional[int] = 30
+) -> Job:
+    try:
+        job_id = f"email-fetch-job-{username}-{thread_id}"
+        job: Job = scheduler.modify_job(
+            job_id=job_id, trigger="interval", seconds=interval
+        )
+        logger.info(f"Updated job {job_id} with new interval {interval} seconds.")
+        return job
+    except Exception as e:
+        e = f"Exception occured while updating job : {e}"
+        logger.error(e, exc_info=True)
+        raise
 
 
 def delete_email_scheduler_job(username: str, thread_id: str):

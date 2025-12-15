@@ -81,7 +81,7 @@ class UpdateUserDataRequest(BaseModel):
     full_name: Optional[str] = None
     voice_output_enabled: Optional[bool] = None
     auto_email_monitoring: Optional[bool] = None
-    email_monitoring_frequency: Optional[int] = None
+    email_monitoring_frequency: Optional[float] = None
     email_notifications: Optional[bool] = None
     gmail_accounts: Optional[List[str]] = None
 

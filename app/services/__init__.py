@@ -3,7 +3,8 @@ from .agents.chatbot_agent.states import ChatbotState
 from .agents.email_agent.graph import graph as EmailAgent
 from .agents.email_agent.states import EmailState
 
-from .jobs import start_email_scheduler_job, delete_email_scheduler_job
+from .cron_jobs.jobs import start_email_scheduler_job, delete_email_scheduler_job, modify_email_scheduler_job
+from .cron_jobs.utils import check_job_exists_by_details
 
 from .gmail_toolkit import GmailToolKit
 
@@ -37,7 +38,9 @@ __all__ = [
     "EmailAgent",
     "EmailState",
     "start_email_scheduler_job",
+    "modify_email_scheduler_job",
     "delete_email_scheduler_job",
+    "check_job_exists_by_details",
     "GmailToolKit",
     "get_session",
     "init_or_get_session",
