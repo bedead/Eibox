@@ -51,6 +51,7 @@ def remove_gmail_account(
 
         # Remove the email
         updated_accounts = [acc for acc in gmail_accounts_data if acc != email_address]
+        print("Updated accounts:", updated_accounts)
 
         # Save back to Redis
         db_store.put(

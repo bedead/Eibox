@@ -21,8 +21,8 @@ def delete_user_account(user: DeleteAccountRequest):
     pass
 
 
-@router.post("/reset_ai_agent_directions")
-def reset_user_specific_ai_agent_directions():
+@router.post("/reset_ai_agent_data")
+def reset_user_specific_ai_agent_data():
     pass
 
 
