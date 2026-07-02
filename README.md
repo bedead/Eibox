@@ -79,6 +79,7 @@ fastapi run main:app
 * `/v1/oauth`: OAuth integration with Gmail
 * `/v1/chatbot`: WebSocket endpoints for chat functionality
 * `/v1/cron`: Scheduler API endpoints (conditionally enabled)
+* `/v1/account_actions`: To modify account data and user controllability
 * `/v1/test`: Testing endpoints
 
 ## Testing

@@ -24,7 +24,8 @@ from .data_ops.auth.update_user_data import update_user_data
 from .data_ops.gmail.accounts.add_gmail_accounts import add_gmail_account
 from .data_ops.gmail.accounts.get_gmail_accounts import get_gmail_account
 from .data_ops.gmail.accounts.save_gmail_accounts import save_gmail_account
-from .data_ops.gmail.accounts.remove_gmail_accounts import remove_gmail_account
+from .data_ops.gmail.accounts.remove_one_mail_accounts import remove_one_mail_account
+from .data_ops.gmail.accounts.remove_all_mail_accounts import remove_all_mail_accounts
 
 from .data_ops.gmail.mails.add_draft_to_mail_object import add_draft_to_mail_object
 from .data_ops.gmail.mails.add_mail_to_object import add_mail_to_object
@@ -54,7 +55,8 @@ __all__ = [
     "add_gmail_account",
     "get_gmail_account",
     "save_gmail_account",
-    "remove_gmail_account",
+    "remove_one_mail_account",
+    "remove_all_mail_accounts",
     "add_draft_to_mail_object",
     "add_mail_to_object",
     "get_mail_object",

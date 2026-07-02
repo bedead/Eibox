@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from fastapi import HTTPException
 
-from app.services.data_ops.gmail.accounts.remove_gmail_accounts import (
+from app.services.data_ops.gmail.accounts.remove_one_mail_accounts import (
     remove_gmail_account,
 )
 

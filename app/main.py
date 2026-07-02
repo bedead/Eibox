@@ -26,6 +26,7 @@ from app.api.v1.routers import (
     oauth_router,
     websocket_router,
     test_router,
+    account_actions_router
 )
 
 
@@ -66,6 +67,7 @@ if settings.CRON_SCHEDULER_API_ENABLED:
 
 app.include_router(auth_router, prefix=f"{API_V1_PREFIX}/auth", tags=["auth"])
 app.include_router(oauth_router, prefix=f"{API_V1_PREFIX}/oauth", tags=["oauth"])
+app.include_router(account_actions_router, prefix=f"{API_V1_PREFIX}/account_actions", tags=["account"])
 app.include_router(
     websocket_router, prefix=f"{API_V1_PREFIX}/chatbot", tags=["chatbot", "websocket"]
 )

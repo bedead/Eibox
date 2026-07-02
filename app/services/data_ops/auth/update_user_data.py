@@ -21,6 +21,7 @@ def update_user_data(
     namespace_for_memory: Tuple[str, str],
     full_name: Optional[str] = None,
     app_settings: Optional[Dict[str, Any]] = None,
+    connected_gmail_accounts_email: Optional[list] = None,
 ) -> Dict[str, Any]:
     """
     Safely update user details in the database with flexible app_settings.
@@ -52,6 +53,9 @@ def update_user_data(
             updated_data["app_settings"] = deep_merge_dicts(
                 updated_data.get("app_settings", {}), app_settings
             )
+
+        if connected_gmail_accounts_email is not None:
+            updated_data['app_settings']["connected_gmail_accounts_email"] = connected_gmail_accounts_email
 
         updated_data["account_details_updated"] = str(datetime.now())
 

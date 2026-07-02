@@ -21,7 +21,6 @@ def get_user_data(
     try:
         data: Item | None = db_store.get(namespace=namespace_for_memory, key=user_key)
 
-        # Check if user exists and password matches
         if not data or not data.value:
             logger.debug(f"404: User data not found for username: {username}")
             raise HTTPException(status_code=404, detail="User not found")
@@ -35,13 +34,11 @@ def get_user_data(
             logger.critical("Parsed user data is not a dictionary")
             raise HTTPException(status_code=500, detail="Invalid user data format")
 
-        # Check if the provided password matches the stored hashed password
         parsed_data = cast(Dict[str, Any], parsed_data)
 
     except Exception as e:
         logger.error(f"Error while retrieving user data: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"{str(e)}")
 
-    # If user exists and password matches, return success
     logger.debug(f"Username: {username} data retrieved successfully.")
     return parsed_data
