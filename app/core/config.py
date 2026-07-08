@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     API_SERVER_URL: str = ""
     API_V1_STR: str = "/api/v1"
     API_DEV_SERVER: bool = True
+    APPLICATION_PORT: int = 8000
 
     # =============================
     # GCP Gmail OAuth

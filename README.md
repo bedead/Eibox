@@ -67,6 +67,10 @@ set API_ENVIRONMENT_TYPE=dev
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 # or
 fastapi run main:app
+# or with ngrok - latest way
+python -m app.main
+# then in another terminal
+ngrok http --url=swayingly-uncoincident-ardella.ngrok-free.dev 8000
 ```
 
 ## API Structure

@@ -1,12 +1,16 @@
 # Standard Library
 import os
 
+# Third Party
+import uvicorn
+
 # Project Packages
 from app.core import settings
 
 
 # ✅ Must happen before LangChain/LangSmith is imported anywhere
 os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY
+
 if settings.LANGSMITH_TRACING:
     os.environ["LANGCHAIN_TRACING_V2"] = "true"  # new SDK flag
     os.environ["LANGSMITH_TRACING"] = "true"  # legacy flag
@@ -77,3 +81,6 @@ app.include_router(test_router, prefix=f"{API_V1_PREFIX}/test", tags=["testing"]
 # from app.api.v2.routers import some_new_router
 # API_V2_PREFIX = "/v2"
 # app.include_router(some_new_router, prefix=f"{API_V2_PREFIX}/some-feature", tags=["new-feature"])
+
+if __name__ == "__main__":
+    uvicorn.run("app.main:app", host="127.0.0.1", port=settings.APPLICATION_PORT, reload=True)
