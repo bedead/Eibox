@@ -25,10 +25,11 @@ from app.utils import (
 
 os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY
 
+# TODO: mitrate to ChatGoogleGenerativeAI, provider specific model initialization, and remove init_chat_model usage
 llm = init_chat_model(
     model="google_genai:gemini-3.1-flash-lite",
     temperature=0.6, 
-    generation_config={"thinking_level": "off"}
+    thinking_level="minimal"
 )
 model_with_tools = llm.bind_tools(all_tools)
 namespace_for_memory = ("auth", "user")
@@ -60,8 +61,8 @@ def context_update(
 
             llm = init_chat_model(
                 model="google_genai:gemini-3.1-flash-lite",
-                temperature=0.5, 
-                generation_config={"thinking_level": "off"}
+                temperature=0.5,
+                thinking_level="minimal"
             )
             # Call LLM if semantic memory is available
             # update data

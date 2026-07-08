@@ -29,8 +29,8 @@ from app.services.agents.email_agent.states import EmailState
 llm_model = init_chat_model(
     model="google_genai:gemini-3.1-flash-lite", 
     temperature=0.5, 
-    generation_config={"thinking_level": "off"}
-    )
+    thinking_level="minimal"
+)
 namespace_for_memory = ("auth", "user")
 
 
