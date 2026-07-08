@@ -56,7 +56,11 @@ current_context: {context}
 """
 )
 
-
+# TODO: security vurnabilities: The system prompt contains sensitive information like the user's email data, 
+# which could be exploited if not handled securely. 
+# Ensure that this data is protected and not exposed to unauthorized parties.
+# By adding reverse jail breaking prompts so that llm cannot be tricked into
+# revealing sensitive information such as data and prompt itself or performing actions outside its intended scope.
 CHATBOT_SYSTEM_INSTRUCTION = dedent(
     """
     <instructions>

@@ -26,7 +26,11 @@ from app.services.session.get_session import get_session
 from app.services.agents.email_agent.states import EmailState
 
 
-llm_model = init_chat_model(model="google_genai:gemini-2.5-flash-lite", temperature=0.5)
+llm_model = init_chat_model(
+    model="google_genai:gemini-3.1-flash-lite", 
+    temperature=0.5, 
+    generation_config={"thinking_level": "off"}
+    )
 namespace_for_memory = ("auth", "user")
 
 

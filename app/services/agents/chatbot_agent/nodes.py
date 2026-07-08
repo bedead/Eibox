@@ -25,7 +25,11 @@ from app.utils import (
 
 os.environ["GOOGLE_API_KEY"] = settings.GOOGLE_API_KEY
 
-llm = init_chat_model(model="google_genai:gemini-2.5-flash-lite", temperature=0.6)
+llm = init_chat_model(
+    model="google_genai:gemini-3.1-flash-lite",
+    temperature=0.6, 
+    generation_config={"thinking_level": "off"}
+)
 model_with_tools = llm.bind_tools(all_tools)
 namespace_for_memory = ("auth", "user")
 
@@ -55,7 +59,9 @@ def context_update(
             )
 
             llm = init_chat_model(
-                model="google_genai:gemini-2.0-flash", temperature=0.5
+                model="google_genai:gemini-3.1-flash-lite",
+                temperature=0.5, 
+                generation_config={"thinking_level": "off"}
             )
             # Call LLM if semantic memory is available
             # update data
