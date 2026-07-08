@@ -12,7 +12,7 @@ from app.services.session.get_session import get_session
 
 
 async def call_main_agent(
-    user_input: str, username: str, thread_id: str, streaming: bool = False
+    user_input: str, username: str, thread_id: str, streaming: bool = True
 ) -> AsyncGenerator[str, None]:
     state = ChatbotState(
         messages=[HumanMessage(content=user_input)],
@@ -38,7 +38,9 @@ async def call_main_agent(
                         isinstance(message_chunk, AIMessageChunk)
                         and metadata["langgraph_node"] == "chatbot"
                     ):
-                        yield _to_text(message_chunk.content)
+                        text = _to_text(message_chunk.content)
+                        # print(f"Token: {text}")
+                        yield text
 
         return _stream_token()
 
@@ -68,6 +70,7 @@ async def call_main_agent(
                     if m and hasattr(m, "content"):
                         response = _to_text(m.content)
                         if response and response != "":
+                            # print(f"Response: {response}")
                             yield response
 
         return _stream_messages()
