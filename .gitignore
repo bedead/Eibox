@@ -5,6 +5,7 @@ token.pickle
 web_creds.json
 emails.json
 venv
+dep-venv
 log_dump
 *.log
 token.json

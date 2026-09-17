@@ -42,6 +42,11 @@ Eibox (formerly ama.ai) is an intelligent system designed to completely handle e
 * redis: For caching and message broker
 * APScheduler: Task scheduling
 * google-api-python-client: Google API client
+* pydantic_settings: For managing application settings
+* 'pydantic[email]'
+* langgraph-checkpoint-redis
+* langchain-google-genai
+* google_auth_oauthlib
 
 **Development Dependencies**:
 
