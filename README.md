@@ -34,6 +34,7 @@ Eibox (formerly ama.ai) is an intelligent system designed to completely handle e
 **Main Dependencies**:
 
 * fastapi: Web framework for building APIs
+* fastapi[standard]
 * uvicorn: ASGI server for FastAPI
 * langchain: Framework for LLM applications
 * groq: LLM provider client
