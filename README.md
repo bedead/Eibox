@@ -70,8 +70,7 @@ fastapi run main:app
 # or with ngrok - latest way
 python -m app.main
 # then in another terminal
-ngrok http --url=ngrok http --url=swayingly-uncoincident-ardella.ngrok-free.dev 8000
- 8000
+ngrok http --url swayingly-uncoincident-ardella.ngrok-free.dev 8080
 ```
 
 ## API Structure
